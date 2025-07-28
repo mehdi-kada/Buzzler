@@ -1,0 +1,55 @@
+# Define all the services (containers) that make up your application
+services:
+  # Backend service (e.g., Django, Flask, Node.js API)
+  backend:
+    # Build the backend image from the Dockerfile in the ./backend directory
+    build: ./backend
+    # Expose port 8000 on the host and map it to port 8000 in the container
+    ports:
+      - "8000:8000"
+    # Load environment variables from the .env file
+    env_file:
+      - .env
+    # Wait for the db and redis services to be ready before starting
+    depends_on:
+      - db
+      - redis
+    # Mount the local ./backend folder into /app inside the container (for live code updates)
+    volumes:
+      - ./backend:/app 
+  
+  # Frontend service (e.g., React, Vue, Angular)
+  frontend:
+    # Build the frontend image from the Dockerfile in the ./frontend directory
+    build: ./frontend
+    # Expose port 3000 on the host and map it to port 3000 in the container
+    ports:
+      - "3000:3000"
+    # Mount the local ./frontend folder into /app inside the container
+    volumes:
+      - ./frontend:/app 
+
+  # Database service using PostgreSQL
+  db:
+    # Use the official postgres image, version 15
+    image: postgres:15
+    # Set environment variables for the database (name, user, password)
+    environment:
+      - POSTGRES_DB=mainDB
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+    # Store database data in a named volume for persistence
+    volumes:
+      - db-data:/var/lib/postgresql/data  # Keeps data even if the container is removed
+
+  # Redis service (used for caching or as a message broker, e.g., for Celery)
+  redis:
+    # Use the official redis image, version 7
+    image: redis:7
+    # Expose port 6379 on the host and map it to port 6379 in the container
+    ports:
+      - "6379:6379"
+
+# Declare named volumes used by services above
+volumes:
+  db-data:
