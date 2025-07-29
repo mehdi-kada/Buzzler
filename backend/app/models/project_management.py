@@ -3,7 +3,8 @@ from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 from sqlalchemy import String, Integer, DateTime, Boolean, Enum, Text, Index, ForeignKey
 from sqlalchemy.sql import func
 import enum
-from backend.app.models.user import Base     
+from backend.app.models.user import Base, User
+from backend.app.models.video import Video     
 
 class ProjectStatus(enum.Enum):
     DRAFT = "draft"
@@ -18,10 +19,8 @@ class Project(Base):
     """
     __tablename__ = "project"
 
-    #PK
     id : Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
 
-    #FK to user 
     user_id: Mapped[int] = mapped_column(ForeignKey("user.id"), nullable=False, index=True)
 
     # project details
@@ -35,8 +34,8 @@ class Project(Base):
     updated_at: Mapped[DateTime] = mapped_column(DateTime(timezone=True),server_default=func.now(), onupdate=func.now())
 
     # relationships
-    user = relationship("User", back_populates="projects")
-    videos = relationship("Video", back_populates="projects", cascade=("all, delete-orphan"))
+    user : Mapped["User"] = relationship("User", back_populates="projects")
+    videos : Mapped[list["Video"]] = relationship("Video", back_populates="projects", cascade=("all, delete-orphan"))
 
     # index for efficient querying (user and status of the proejct)
     __table_args__ = (
