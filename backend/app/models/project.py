@@ -29,15 +29,15 @@ class Project(Base):
     status: Mapped[ProjectStatus] = mapped_column(Enum(ProjectStatus), default=ProjectStatus.DRAFT, index=True)
     settings: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
-    # Timestamps
+
     created_at: Mapped[DateTime] = mapped_column(DateTime(timezone=True), server_default=func.now(), )
     updated_at: Mapped[DateTime] = mapped_column(DateTime(timezone=True),server_default=func.now(), onupdate=func.now())
 
-    # relationships
+
     user : Mapped["User"] = relationship("User", back_populates="projects")
     videos : Mapped[list["Video"]] = relationship("Video", back_populates="projects", cascade=("all, delete-orphan"))
 
-    # index for efficient querying (user and status of the proejct)
+ 
     __table_args__ = (
         Index("idx_project_user_status", "user_id", "status"),
     )

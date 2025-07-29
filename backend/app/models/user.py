@@ -4,11 +4,11 @@ from sqlalchemy import String, Integer, DateTime, Boolean, Enum, Text, Index
 from sqlalchemy.sql import func
 import enum
 
-# base class to register all classes (tables) in sqlachmey 
+
 class Base(DeclarativeBase):
     pass 
 
-# Enums for data consistency 
+
 class AuthProviders(enum.Enum):
     EMAIL = "email"
     GOOGLE = "google"
@@ -45,7 +45,6 @@ class User(Base):
     email_verification_token : Mapped[Optional[str]] = mapped_column(String, nullable=False)
     password_reset_token: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     
-    # timestamps
     created_at : Mapped[DateTime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at : Mapped[DateTime] = mapped_column(DateTime(timezone=True),server_default=func.now(), onupdate=func.now())
 
