@@ -1,6 +1,8 @@
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.db.database import get_db
 
 
 app = FastAPI()
@@ -20,4 +22,10 @@ app.add_middleware(
 async def hello():
     return {
         "axcel": "you got this , push your limits "
+    }
+
+@app.get("/test-db")
+async def test_db(db : AsyncSession = Depends(get_db)):
+    return {
+        "message" : "DataBase Seccessful"
     }
