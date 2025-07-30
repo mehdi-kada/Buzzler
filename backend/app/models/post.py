@@ -3,9 +3,8 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy import JSON, String, Integer, DateTime, Enum, Text, ForeignKey, Index, Float, func
 import enum
 
-from backend.app.models.clip import Clip
-from backend.app.models.social_account import SocialAccount
-from backend.app.db.database import Base
+
+from app.db.database import Base
 
 class PostStatus(enum.Enum):
     DRAFT = "draft"

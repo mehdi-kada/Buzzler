@@ -1,5 +1,6 @@
 from alembic import context
-from sqlalchemy.ext.asyncio import create_async_engine  from logging.config import fileConfig
+from sqlalchemy.ext.asyncio import create_async_engine  
+from logging.config import fileConfig
 import os
 from dotenv import load_dotenv
 
@@ -20,6 +21,11 @@ from app.db.database import Base
 
 config = context.config
 fileConfig(config.config_file_name)
+
+# Set the sqlalchemy.url from environment variable
+database_url = os.getenv("DATABASE_URL")
+if database_url:
+    config.set_main_option("sqlalchemy.url", database_url)
 
 target_metadata = Base.metadata
 
@@ -55,6 +61,6 @@ if context.is_offline_mode():
   run_migrations_offline()
 else:
     import asyncio
-    asyncio.run(run_migrations_online)
+    asyncio.run(run_migrations_online())
     
       

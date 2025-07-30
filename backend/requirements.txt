@@ -3,3 +3,7 @@ uvicorn
 alembic
 requests
 sqlalchemy
+python-dotenv
+sqlalchemy[asyncio]
+asyncpg
+websockets==15.0.1

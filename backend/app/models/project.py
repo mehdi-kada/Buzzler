@@ -3,8 +3,9 @@ from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 from sqlalchemy import JSON, String, Integer, DateTime, Boolean, Enum, Text, Index, ForeignKey
 from sqlalchemy.sql import func
 import enum
-from backend.app.db.database import Base, User
-from backend.app.models.video import Video     
+
+from app.db.database import Base
+
 
 class ProjectStatus(enum.Enum):
     DRAFT = "draft"

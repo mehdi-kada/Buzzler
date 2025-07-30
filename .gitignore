@@ -54,6 +54,15 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# Ignore all cache folders inside backend and its subfolders
+backend/**/__pycache__/
+backend/**/cache/
+backend/**/Cache/
+
+# Ignore all markdown files
+*.md
+backend/**/*.md
+
 frontend/node_modules/
 frontend/.next/
 frontend/.pnp

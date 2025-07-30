@@ -1,11 +1,9 @@
 from typing import Optional
+from app.db.database import Base
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy import JSON, String, Integer, DateTime, Enum, Text, ForeignKey, Index, func
 import enum
 
-from backend.app.models.post import Post
-from backend.app.db.database import Base
-from backend.app.models.video import Video
 
 
 

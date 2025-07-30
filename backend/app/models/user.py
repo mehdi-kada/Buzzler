@@ -4,10 +4,8 @@ from sqlalchemy import String, Integer, DateTime, Boolean, Enum, Text, Index
 from sqlalchemy.sql import func
 import enum
 
-from backend.app.db.database import Base
-from backend.app.models.content_template import ContentTemplate
-from backend.app.models.project import Project
-from backend.app.models.social_account import SocialAccount
+from app.db.database import Base
+
 
 class AuthProviders(enum.Enum):
     EMAIL = "email"
@@ -33,8 +31,8 @@ class User(Base):
     auth_provider : Mapped[AuthProviders] = mapped_column(Enum(AuthProviders), nullable=False, default=AuthProviders.EMAIL)
     oauth_id : Mapped[Optional[str]] = mapped_column(String(255), nullable=True, index=True)    # external OAuth ID
     last_login_at: Mapped[Optional[DateTime]] = mapped_column(DateTime(timezone=True), nullable=True)
-    refresh_token = Mapped[str] = mapped_column(String(255), nullable=True)  # For token refresh
-    password_reset_expires_at: Mapped[Optional[DateTime]]
+    refresh_token : Mapped[str] = mapped_column(String(255), nullable=True)  # For token refresh
+    password_reset_expires_at: Mapped[Optional[DateTime]] =  mapped_column(DateTime(timezone=True),nullable=True)
     failed_login_attempts: Mapped[int] = mapped_column(Integer, default=0)
 
     # user info
@@ -55,5 +53,5 @@ class User(Base):
     templates: Mapped[list["ContentTemplate"]] = relationship("ContentTemplate", back_populates="user")
 
     __table_args__ = (
-        Index('idx_auth_provider', "auth_provider", "oauth_id")
+        Index('idx_auth_provider', "auth_provider", "oauth_id"),
     )

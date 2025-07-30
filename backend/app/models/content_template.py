@@ -3,7 +3,9 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy import JSON, String, Integer, DateTime, Boolean, Enum, Text, ForeignKey, Index, func
 import enum
 
-from backend.app.db.database import Base, User
+from app.db.database import Base
+#from app.models.user import User
+
 
 class TemplateType(enum.Enum):
     POST_TEMPLATE = "post_template"
@@ -39,7 +41,7 @@ class ContentTemplate(Base):
     content: Mapped[str] = mapped_column(Text, nullable=False)
     hashtags: Mapped[Optional[list[str]]] = mapped_column(JSON, nullable=True)                   
 
-    # Platform-specific versions
+    # platform-specific versions
     platform_variations: Mapped[Optional[list[SocialPlatform]]] = mapped_column(JSON, nullable=True)   
 
     # usage tracking

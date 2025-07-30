@@ -8,8 +8,10 @@ WORKDIR /app
 COPY  requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# copy your code
+# copy your code and alembic configuration
 COPY ./app /app/app
+COPY ./alembic /app/alembic
+COPY ./alembic.ini /app/alembic.ini
 
 #Expose FastAPI port 
 EXPOSE 8000

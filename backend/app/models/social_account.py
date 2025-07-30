@@ -3,8 +3,8 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy import JSON, String, Integer, DateTime, Enum, Text, ForeignKey, Index, UniqueConstraint, func
 import enum
 
-from backend.app.models.post import Post
-from backend.app.db.database import Base, User
+from app.db.database import Base
+
 
 class SocialPlatform(enum.Enum):
     TWITTER = "twitter"
@@ -68,6 +68,6 @@ class SocialAccount(Base):
         Index('idx_social_user_platform', 'user_id', 'platform'),
         Index('idx_social_status', 'status', 'last_health_check'),
         # unique constraint: one account per platform per user
-        UniqueConstraint("user_id", "platform_user_id", "platform", name="uq_user_platform_account")
+        UniqueConstraint("user_id", "platform_user_id", "platform", name="uq_user_platform_account"),
     )
 

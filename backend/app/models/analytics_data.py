@@ -4,9 +4,8 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy import JSON, String, Integer, DateTime, Enum, Text, ForeignKey, Index, Float, Date, UniqueConstraint, func
 import enum
 
-from backend.app.models.post import Post
-from backend.app.models.social_account import SocialAccount
-from backend.app.db.database import Base
+
+from app.db.database import Base
 
 class AnalyticsType(enum.Enum):
     POST_PERFORMANCE = "post_performance"

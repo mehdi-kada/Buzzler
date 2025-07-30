@@ -4,9 +4,8 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy import JSON, String, Integer, DateTime, Enum, Text, ForeignKey, Index, Float, func
 import enum
 
-from backend.app.models.clip import Clip
-from backend.app.models.project import Project
-from backend.app.db.database import Base
+
+from app.db.database import Base
 
 
 
@@ -70,5 +69,5 @@ class Video(Base):
 
     __table_args__ = (
         Index("indx_vid_prj_status", "project_id", "status"),
-        Index("idx_crt_at", "created_at")
+        Index("idx_crt_at", "created_at"),
     )
