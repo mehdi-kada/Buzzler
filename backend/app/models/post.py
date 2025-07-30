@@ -5,7 +5,7 @@ import enum
 
 from backend.app.models.clip import Clip
 from backend.app.models.social_account import SocialAccount
-from backend.app.models.user import Base
+from backend.app.db.database import Base
 
 class PostStatus(enum.Enum):
     DRAFT = "draft"

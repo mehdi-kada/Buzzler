@@ -35,9 +35,9 @@ services:
     image: postgres:15
     # Set environment variables for the database (name, user, password)
     environment:
-      - POSTGRES_DB=mainDB
-      - POSTGRES_USER=user
-      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=Buzzler
+      - POSTGRES_USER=Buzzler_user
+      - POSTGRES_PASSWORD=mahdi067279
     # Store database data in a named volume for persistence
     volumes:
       - db-data:/var/lib/postgresql/data  # Keeps data even if the container is removed

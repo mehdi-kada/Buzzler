@@ -1,13 +1,13 @@
 from typing import Optional
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 from sqlalchemy import String, Integer, DateTime, Boolean, Enum, Text, Index
 from sqlalchemy.sql import func
 import enum
 
-
-class Base(DeclarativeBase):
-    pass 
-
+from backend.app.db.database import Base
+from backend.app.models.content_template import ContentTemplate
+from backend.app.models.project import Project
+from backend.app.models.social_account import SocialAccount
 
 class AuthProviders(enum.Enum):
     EMAIL = "email"
@@ -34,6 +34,8 @@ class User(Base):
     oauth_id : Mapped[Optional[str]] = mapped_column(String(255), nullable=True, index=True)    # external OAuth ID
     last_login_at: Mapped[Optional[DateTime]] = mapped_column(DateTime(timezone=True), nullable=True)
     refresh_token = Mapped[str] = mapped_column(String(255), nullable=True)  # For token refresh
+    password_reset_expires_at: Mapped[Optional[DateTime]]
+    failed_login_attempts: Mapped[int] = mapped_column(Integer, default=0)
 
     # user info
     first_name : Mapped[str] = mapped_column(String(255), nullable=False)
@@ -47,6 +49,10 @@ class User(Base):
     
     created_at : Mapped[DateTime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at : Mapped[DateTime] = mapped_column(DateTime(timezone=True),server_default=func.now(), onupdate=func.now())
+
+    projects : Mapped[list["Project"]] = relationship("Project", back_populates="user")
+    social_accounts: Mapped[list["SocialAccount"]] = relationship("SocialAccount", back_populates="user")
+    templates: Mapped[list["ContentTemplate"]] = relationship("ContentTemplate", back_populates="user")
 
     __table_args__ = (
         Index('idx_auth_provider', "auth_provider", "oauth_id")

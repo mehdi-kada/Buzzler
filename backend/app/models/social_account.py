@@ -4,7 +4,7 @@ from sqlalchemy import JSON, String, Integer, DateTime, Enum, Text, ForeignKey, 
 import enum
 
 from backend.app.models.post import Post
-from backend.app.models.user import Base, User
+from backend.app.db.database import Base, User
 
 class SocialPlatform(enum.Enum):
     TWITTER = "twitter"

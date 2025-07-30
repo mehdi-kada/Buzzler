@@ -3,7 +3,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy import JSON, String, Integer, DateTime, Boolean, Enum, Text, ForeignKey, Index, func
 import enum
 
-from backend.app.models.user import Base, User
+from backend.app.db.database import Base, User
 
 class TemplateType(enum.Enum):
     POST_TEMPLATE = "post_template"
@@ -28,7 +28,7 @@ class ContentTemplate(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
 
-    user_id: Mapped[int] = mapped_column(ForeignKey('users.id'), nullable=False, index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey('user.id'), nullable=False, index=True)
 
     # Template details
     name: Mapped[str] = mapped_column(String(255), nullable=False)

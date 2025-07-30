@@ -6,7 +6,7 @@ import enum
 
 from backend.app.models.clip import Clip
 from backend.app.models.project import Project
-from backend.app.models.user import Base
+from backend.app.db.database import Base
 
 
 
@@ -64,7 +64,7 @@ class Video(Base):
     processed_at: Mapped[Optional[DateTime]] = mapped_column(DateTime(timezone=True), nullable=True)
 
 
-    project : Mapped[list["Project"]] = relationship("Project", back_populates="videos")
+    project : Mapped["Project"] = relationship("Project", back_populates="videos")
     clips : Mapped[list["Clip"]] = relationship("Clip", back_populates="video", cascade="all, delete-orphan")
 
 

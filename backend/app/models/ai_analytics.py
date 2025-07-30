@@ -6,7 +6,7 @@ import enum
 
 from backend.app.models.post import Post
 from backend.app.models.social_account import SocialAccount
-from backend.app.models.user import Base
+from backend.app.db.database import Base
 
 class InsightType(enum.Enum):
     BEST_POSTING_TIME = "best_posting_time"

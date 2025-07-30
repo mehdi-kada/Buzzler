@@ -4,7 +4,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy import String, Integer, DateTime, Boolean, Enum, Index, func
 import enum
 
-from backend.app.models.user import Base
+from backend.app.db.database import Base
 
 
 class EntityType(enum.Enum):

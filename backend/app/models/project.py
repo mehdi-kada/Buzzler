@@ -3,7 +3,7 @@ from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 from sqlalchemy import JSON, String, Integer, DateTime, Boolean, Enum, Text, Index, ForeignKey
 from sqlalchemy.sql import func
 import enum
-from backend.app.models.user import Base, User
+from backend.app.db.database import Base, User
 from backend.app.models.video import Video     
 
 class ProjectStatus(enum.Enum):

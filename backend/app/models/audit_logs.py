@@ -3,7 +3,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy import JSON, String, Integer, DateTime, Enum, Text, ForeignKey, Index
 import enum
 
-from backend.app.models.user import Base, User
+from backend.app.db.database import Base, User
 
 class ActionType(enum.Enum):
     USER_LOGIN = "user_login"
@@ -21,14 +21,14 @@ class AuditLog(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
 
-    user_id: Mapped[Mapped[int]] = mapped_column(ForeignKey('user.id'), nullable=True, index=True)  # Null for system actions
+    user_id: Mapped[int] = mapped_column(ForeignKey('user.id'), nullable=True, index=True)  # Null for system actions
 
     action: Mapped[ActionType] = mapped_column(Enum(ActionType), nullable=False, index=True)
     resource_type: Mapped[Optional[str]] = mapped_column(String(50), nullable=True, index=True)    # video, clip, post, etc.
     resource_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True, index=True)
 
     description: Mapped[str] = mapped_column(Text, nullable=False)
-    metadata: Mapped[Optional[list[dict]]] = mapped_column(JSON, nullable=True)                          # JSON with additional context
+    metadata: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)                          # JSON with additional context
 
     ip_address: Mapped[Optional[str]] = mapped_column(String(45), nullable=True, index=True)      # IPv4/IPv6
     user_agent: Mapped[Optional[str]] = mapped_column(Text, nullable=True)

@@ -1,10 +1,10 @@
 from typing import Optional
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy import String, Integer, DateTime, Enum, Text, ForeignKey, Index, func
+from sqlalchemy import JSON, String, Integer, DateTime, Enum, Text, ForeignKey, Index, func
 import enum
 
 from backend.app.models.post import Post
-from backend.app.models.user import Base
+from backend.app.db.database import Base
 from backend.app.models.video import Video
 
 
@@ -44,7 +44,7 @@ class Clip(Base):
     # AI generated metadata
     title: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
     description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    transcript: Mapped[Optional[list[dict]]] = mapped_column(Text, nullable=True)
+    transcript: Mapped[Optional[list[dict]]] = mapped_column(JSON, nullable=True)
     ai_score: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)           
     ai_reasoning: Mapped[Optional[str]] = mapped_column(Text, nullable=True)         
 
