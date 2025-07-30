@@ -44,7 +44,7 @@ class Clip(Base):
     # AI generated metadata
     title: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
     description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    transcript: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    transcript: Mapped[Optional[list[dict]]] = mapped_column(Text, nullable=True)
     ai_score: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)           
     ai_reasoning: Mapped[Optional[str]] = mapped_column(Text, nullable=True)         
 
@@ -57,7 +57,7 @@ class Clip(Base):
     updated_at: Mapped[DateTime] = mapped_column(DateTime(timezone=True), onupdate=func.now())
 
     video : Mapped["Video"] = relationship("Video", back_populates="clips")
-    posts : Mapped[list["Post"]] = relationship("SocialPost", back_populates="clip")
+    posts : Mapped[list["Post"]] = relationship("Post", back_populates="clip")
     
 
     __table_args__ = (

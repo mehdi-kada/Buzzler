@@ -1,7 +1,6 @@
-# social_posts.py - Social media posts and scheduling
 from typing import Optional
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy import String, Integer, DateTime, Enum, Text, ForeignKey, Index, Float, func
+from sqlalchemy import JSON, String, Integer, DateTime, Enum, Text, ForeignKey, Index, Float, func
 import enum
 
 from backend.app.models.clip import Clip
@@ -28,8 +27,8 @@ class Post(Base):
 
     # content
     content: Mapped[str] = mapped_column(Text, nullable=False)
-    hashtags: Mapped[Optional[str]] = mapped_column(Text, nullable=True)                    
-    media_urls: Mapped[Optional[str]] = mapped_column(Text, nullable=True)               
+    hashtags: Mapped[Optional[list[str]]] = mapped_column(JSON, nullable=True)                    
+    media_urls: Mapped[Optional[list[str]]] = mapped_column(JSON, nullable=True)               
 
     # publishing
     status: Mapped[PostStatus] = mapped_column(Enum(PostStatus), default=PostStatus.DRAFT, index=True)

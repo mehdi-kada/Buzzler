@@ -1,6 +1,6 @@
 from typing import Optional
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy import String, Integer, DateTime, Enum, Text, ForeignKey, Index, UniqueConstraint, func
+from sqlalchemy import JSON, String, Integer, DateTime, Enum, Text, ForeignKey, Index, UniqueConstraint, func
 import enum
 
 from backend.app.models.post import Post
@@ -53,7 +53,7 @@ class SocialAccount(Base):
     error_message: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
 
-    settings: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  
+    settings: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)  
 
 
     created_at: Mapped[DateTime] = mapped_column(DateTime(timezone=True), server_default=func.now())
@@ -61,7 +61,7 @@ class SocialAccount(Base):
 
 
     user : Mapped["User"] = relationship("User", back_populates="social_accounts")
-    posts : Mapped[list["Post"]] = relationship("SocialPost", back_populates="account")
+    posts : Mapped[list["Post"]] = relationship("Post", back_populates="account")
 
 
     __table_args__ = (

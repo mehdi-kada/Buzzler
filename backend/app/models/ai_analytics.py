@@ -31,7 +31,7 @@ class AIInsight(Base):
     title: Mapped[str] = mapped_column(String(500), nullable=False)
     content: Mapped[str] = mapped_column(Text, nullable=False)                   
     insight_type: Mapped[InsightType] = mapped_column(Enum(InsightType), nullable=False, index=True)  
-    confidence_score: Mapped[Optional[float]] = mapped_column(Float, nullable=True)          
+    confidence_score: Mapped[Optional[float]] = mapped_column(Float, nullable=True)    # this is for feedback     
     best_action: Mapped[str] = mapped_column(Text,nullable=True)
 
     # metadata
@@ -41,7 +41,7 @@ class AIInsight(Base):
     # user interaction (for user behavior analysis)
     is_read: Mapped[bool] = mapped_column(Boolean, default=False, index=True)
     is_dismissed: Mapped[bool] = mapped_column(Boolean, default=False)
-    user_feedback: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)       # helpful, not_helpful, etc.
+    user_feedback: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)       
 
     created_at: Mapped[DateTime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[DateTime] = mapped_column(DateTime(timezone=True), server_default=func.now(),  onupdate=func.now())

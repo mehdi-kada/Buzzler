@@ -1,7 +1,7 @@
 # videos.py - Core video storage and processing
 from typing import Optional
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy import String, Integer, DateTime, Enum, Text, ForeignKey, Index, Float, func
+from sqlalchemy import JSON, String, Integer, DateTime, Enum, Text, ForeignKey, Index, Float, func
 import enum
 
 from backend.app.models.clip import Clip
@@ -55,7 +55,7 @@ class Video(Base):
     error_message: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
     # AI generated metadata for the video (transcript to be split later for each clip/post,)
-    transcript_data: Mapped[Optional[str]] = mapped_column(Text, nullable=True)       
+    transcript: Mapped[Optional[list[dict]]] = mapped_column(JSON, nullable=True)     
     analysis_data: Mapped[Optional[str]] = mapped_column(Text, nullable=True)         
 
 

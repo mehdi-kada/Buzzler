@@ -25,7 +25,7 @@ class User(Base):
     """
     __tablename__ = "user"
 
-    id : Mapped[str] = mapped_column(primary_key=True, autoincrement=True)
+    id : Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
 
     # Auth related fields
     email: Mapped[str] = mapped_column(String(255), nullable=False, unique=True, index=True)
