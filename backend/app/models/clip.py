@@ -23,7 +23,7 @@ class Clip(Base):
     """
         clips generated from videos , optimized for batch processing 
     """
-    __tablename__ = 'clips'
+    __tablename__ = 'clip'
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
 
