@@ -55,3 +55,11 @@ class User(Base):
     __table_args__ = (
         Index('idx_auth_provider', "auth_provider", "oauth_id"),
     )
+
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from app.models.project import Project
+    from app.models.social_account import SocialAccount
+    from app.models.content_template import ContentTemplate

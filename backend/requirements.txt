@@ -1,3 +1,5 @@
+# For Pydantic EmailStr support
+email-validator
 fastapi
 uvicorn
 alembic
@@ -6,4 +8,4 @@ sqlalchemy
 python-dotenv
 sqlalchemy[asyncio]
 asyncpg
-websockets==15.0.1
+websockets

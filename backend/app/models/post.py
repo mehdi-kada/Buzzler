@@ -54,6 +54,12 @@ class Post(Base):
     clip: Mapped["Clip"] = relationship("Clip", back_populates="posts")
     account: Mapped["SocialAccount"] = relationship("SocialAccount", back_populates="posts")
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from app.models.clip import Clip
+    from app.models.social_account import SocialAccount
+
     __table_args__ = (
         Index('idx_post_scheduled', 'status', 'scheduled_at'),
         Index('idx_post_account_status', 'account_id', 'status'),

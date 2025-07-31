@@ -6,6 +6,7 @@ import enum
 from app.db.database import Base
 
 
+
 class SocialPlatform(enum.Enum):
     TWITTER = "twitter"
     INSTAGRAM = "instagram"
@@ -71,3 +72,8 @@ class SocialAccount(Base):
         UniqueConstraint("user_id", "platform_user_id", "platform", name="uq_user_platform_account"),
     )
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from app.models.post import Post
+    from app.models.user import User

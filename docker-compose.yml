@@ -36,7 +36,7 @@ services:
   # Database service using PostgreSQL
   db:
     # Use the official postgres image, version 15
-    image: postgres:17
+    image: postgres:16
     # Set environment variables for the database (name, user, password)
     environment:
       POSTGRES_DB: Buzzler

@@ -56,6 +56,12 @@ class Clip(Base):
 
     video : Mapped["Video"] = relationship("Video", back_populates="clips")
     posts : Mapped[list["Post"]] = relationship("Post", back_populates="clip")
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from app.models.video import Video
+    from app.models.post import Post
     
 
     __table_args__ = (

@@ -38,6 +38,12 @@ class AnalyticsData(Base):
     account : Mapped["SocialAccount"] = relationship("SocialAccount")
     post : Mapped["Post"] = relationship("Post")
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from app.models.social_account import SocialAccount
+    from app.models.post import Post
+
     __table_args__ = (
         Index('idx_analytics_account_date', 'account_id', 'date'),
         Index('idx_analytics_type_date', 'type', 'date'),

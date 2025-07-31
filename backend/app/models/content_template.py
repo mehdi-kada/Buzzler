@@ -4,7 +4,8 @@ from sqlalchemy import JSON, String, Integer, DateTime, Boolean, Enum, Text, For
 import enum
 
 from app.db.database import Base
-#from app.models.user import User
+
+
 
 
 class TemplateType(enum.Enum):
@@ -58,3 +59,8 @@ class ContentTemplate(Base):
     __table_args__ = (
         Index('idx_template_user_type', 'user_id', 'type'),
     )
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from app.models.user import User

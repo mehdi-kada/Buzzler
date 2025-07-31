@@ -7,6 +7,7 @@ import enum
 from app.db.database import Base
 
 
+
 class ProjectStatus(enum.Enum):
     DRAFT = "draft"
     PROCESSING = "processing" 
@@ -42,3 +43,9 @@ class Project(Base):
     __table_args__ = (
         Index("idx_project_user_status", "user_id", "status"),
     )
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from app.models.user import User
+    from app.models.video import Video

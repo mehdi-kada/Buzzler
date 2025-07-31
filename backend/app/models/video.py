@@ -66,6 +66,12 @@ class Video(Base):
     project : Mapped["Project"] = relationship("Project", back_populates="videos")
     clips : Mapped[list["Clip"]] = relationship("Clip", back_populates="video", cascade="all, delete-orphan")
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from app.models.project import Project
+    from app.models.clip import Clip
+
 
     __table_args__ = (
         Index("indx_vid_prj_status", "project_id", "status"),
