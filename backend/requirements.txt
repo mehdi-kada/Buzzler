@@ -9,3 +9,7 @@ python-dotenv
 sqlalchemy[asyncio]
 asyncpg
 websockets
+python-jose[cryptography] 
+passlib[bcrypt] 
+python-dotenv 
+aiosmtplib
