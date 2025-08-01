@@ -1,20 +1,26 @@
-from pydantic import BaseModel, EmailStr
-from typing import Optional
-from enum import Enum
+from pydantic import BaseModel
 
-class AuthProviders(str, Enum):
-    EMAIL = "email"
-    GOOGLE = "google"
-    X = "twitter"
 
-class UserCreate(BaseModel):
-    email: EmailStr
-    password_hashed: Optional[str] = None
-    auth_provider: AuthProviders = AuthProviders.EMAIL
-    oauth_id: Optional[str] = None
+class UserBase(BaseModel):
+    email: str
+    hassword : str
     first_name: str
-    avatar_url: Optional[str] = None
-    is_active: Optional[bool] = True
-    is_verified: Optional[bool] = False
-    email_verification_token: str
-    password_reset_token: Optional[str] = None
+
+class UserResponse(BaseModel):
+    id: int
+    email: str
+    first_name: str
+    is_active: bool
+    is_verified: bool
+
+    class Config:
+        orm_mode= True
+
+class TokenResponse(BaseModel):
+    access_token: str
+    token_type: str
+
+class PasswordReset(BaseModel):
+    token: str
+    new_password: str
+
