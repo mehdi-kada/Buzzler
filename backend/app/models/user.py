@@ -31,7 +31,7 @@ class User(Base):
     auth_provider : Mapped[AuthProviders] = mapped_column(Enum(AuthProviders), nullable=False, default=AuthProviders.EMAIL)
     oauth_id : Mapped[Optional[str]] = mapped_column(String(255), nullable=True, index=True)    # external OAuth ID
     last_login_at: Mapped[Optional[DateTime]] = mapped_column(DateTime(timezone=True), nullable=True)
-    refresh_token : Mapped[str] = mapped_column(String(255), nullable=True)  # For token refresh
+    refresh_token : Mapped[Optional[str]] = mapped_column(String(255), nullable=True)  # For token refresh
     password_reset_expires_at: Mapped[Optional[DateTime]] =  mapped_column(DateTime(timezone=True),nullable=True)
     failed_login_attempts: Mapped[int] = mapped_column(Integer, default=0)
 
