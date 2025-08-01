@@ -3,7 +3,7 @@ import uuid
 from fastapi import HTTPException, status, Response
 from passlib.context import CryptContext
 from jose import JWTError, jwt
-from backend.app.core.config import Settings
+from app.core.config import Settings
 
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")

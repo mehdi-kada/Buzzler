@@ -6,11 +6,10 @@ import enum
 
 from app.db.database import Base
 
-
 class AuthProviders(enum.Enum):
-    EMAIL = "email"
-    GOOGLE = "google"
-    X = "twitter"
+    EMAIL = "EMAIL"
+    GOOGLE = "GOOGLE"
+    X = "X"
 
 class UserPlan(enum.Enum):
     FREE = "free"

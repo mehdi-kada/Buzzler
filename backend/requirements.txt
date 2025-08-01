@@ -1,7 +1,9 @@
-# For Pydantic EmailStr support
+bcrypt<4.0.0
+pydantic
 email-validator
 fastapi
 uvicorn
+python-multipart
 alembic
 requests
 sqlalchemy

@@ -14,7 +14,7 @@ class UserResponse(BaseModel):
     is_verified: bool
 
     class Config:
-        orm_mode= True
+        from_attributes = True
 
 class TokenResponse(BaseModel):
     access_token: str
