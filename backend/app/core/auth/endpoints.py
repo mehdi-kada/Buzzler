@@ -1,5 +1,5 @@
 # Depenedcry to get user (verify them )
-from datetime import datetime
+from datetime import datetime,timedelta
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy import select
@@ -7,8 +7,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.database import get_db
 from app.models.user import AuthProviders, User
-from app.core.auth.helpers_functions import create_access_token, create_refresh_token, generate_refresh_token, hash_password, hash_token, set_refresh_token_cookie, verify_hash_token, verify_password, verify_token
-from app.schemas.user import TokenResponse, UserBase, UserResponse
+from app.core.auth.helpers_functions import clear_refresh_cookie, create_access_token, create_refresh_token, generate_verification_token, hash_password, hash_token, set_refresh_token_cookie, verify_hash_token, verify_password, verify_token
+from app.schemas.user import PasswordReset, TokenResponse, UserBase, UserResponse
 
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -40,7 +40,7 @@ async def get_current_user(token: str = Depends(oauth_scheme), db: AsyncSession 
     return user 
 
 @router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED )
-async def register(user_data: UserBase , db: AsyncSession= Depends(get_db), response: Response = None ):
+async def register(user_data: UserBase ,response: Response, db: AsyncSession= Depends(get_db) ):
     """ register user and send verification email """
     result = await db.execute(select(User).where(User.email == user_data.email))
     if result.scalars().first():
@@ -50,7 +50,7 @@ async def register(user_data: UserBase , db: AsyncSession= Depends(get_db), resp
         )
     
     hashed_password = hash_password(user_data.password)
-    verification_token = generate_refresh_token()
+    verification_token = generate_verification_token()
     new_user= User(
         email= user_data.email,
         password_hashed= hashed_password,
@@ -63,7 +63,7 @@ async def register(user_data: UserBase , db: AsyncSession= Depends(get_db), resp
     await db.refresh(new_user)
 
     # send the verification email 
-    #await send_verification_email(new_user.email, verification_token)
+    # await send_verification_email(new_user.email, verification_token)
 
     return new_user
 
@@ -74,19 +74,37 @@ async def login(response: Response ,user_form: OAuth2PasswordRequestForm = Depen
     """
     result = await db.execute(select(User).where(User.email == user_form.username))
     user = result.scalars().first()
-    if not user or not verify_password(user_form.password, user.password_hashed) : 
-        if user:
-            user.failed_login_attempts += 1
-            await db.commit()
-            if user.failed_login_attempts >= 5:
-                raise HTTPException(
-                    status_code= status.HTTP_403_FORBIDDEN,
-                    detail= "account locked"
-                )
+
+    if not user:
         raise HTTPException(
-            status_code= status.HTTP_401_UNAUTHORIZED,
-            detail= "Invalid Credentials"
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid Credentials"
         )
+
+    # check if the user account is locked 
+    if user.account_lockout_expiry:
+        if user.account_lockout_expiry > datetime.utcnow():
+            raise HTTPException(status_code=status.HTTP_423_LOCKED,
+                                detail=f"Account locked until {user.account_lockout_expiry.isoformat()}")
+        user.failed_login_attempts = 0
+        user.account_lockout_expiry = None
+
+    if not verify_password(user_form.password, user.password_hashed) : 
+        user.failed_login_attempts += 1
+        # check for the number of login attempts to lock the user's account
+        if user.failed_login_attempts >= 5:
+            user.account_lockout_expiry = datetime.utcnow() + timedelta(hours=1)
+            await db.commit()
+            raise HTTPException(
+                status_code= status.HTTP_403_FORBIDDEN,
+                detail= "account locked"
+            )
+        await db.commit()
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid Credentials"
+        )
+    
     if not user.is_verified:
         raise HTTPException(
             status_code= status.HTTP_403_FORBIDDEN,
@@ -95,7 +113,7 @@ async def login(response: Response ,user_form: OAuth2PasswordRequestForm = Depen
     # reset the failed attemptes
     user.failed_login_attempts= 0
     user.last_login_at= datetime.utcnow()
-
+    user.account_lockout_expiry = None
     # create the tokens 
     access_token = create_access_token(data={"sub": user.email})
     refresh_token = create_refresh_token(data={"sub": user.email})
@@ -108,9 +126,11 @@ async def login(response: Response ,user_form: OAuth2PasswordRequestForm = Depen
 
 
 @router.post("/refresh", response_model=TokenResponse)
-async def refresh_token(request:Request, db : AsyncSession = Depends(get_db), response: Response = None ):
-
-    refresh_token= request.cookies.get("refrzsrefresh_token")
+async def refresh_token(request:Request,response: Response, db : AsyncSession = Depends(get_db) ):
+    """
+        refresh the access token using the refresh token from cookie
+    """
+    refresh_token= request.cookies.get("refresh_token")
     if not refresh_token: 
         raise HTTPException(
             status_code= status.HTTP_401_UNAUTHORIZED,
@@ -138,3 +158,59 @@ async def refresh_token(request:Request, db : AsyncSession = Depends(get_db), re
         access_token= access_token,
         token_type= "bearer" 
     )
+
+@router.post("/logout")
+async def log_out(response: Response, db: AsyncSession= Depends(get_db), user: User = Depends(get_current_user)):
+    user.refresh_token = None
+    await db.commit()
+    clear_refresh_cookie(response)
+    return{
+        "message": "logged out successfully "
+    }
+
+
+@router.post("/verify-email")
+async def verify_email(token: str, db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(User).where(User.email_verification_token == token))
+    user = result.scalars().first()
+    if not user:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid verification token")
+    user.is_verified = True
+    user.email_verification_token = None
+    await db.commit()
+    return{
+        "message": "email verification successfully "
+    }
+
+
+@router.post("/password-reset-request")
+async def password_reset_request (email:str, db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(User).where(User.email == email))
+    user = result.scalars().first()
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Email not found")
+    token = generate_verification_token()
+    user.password_reset_token = token
+    user.password_reset_expires_at = datetime.utcnow() + timedelta(hours=1)
+    await db.commit()
+
+    await send_password_verification_email(user.email, token)
+    return{
+        "message": "email sent successfully"
+    }
+
+@router.post("/password-reset")
+async def password_reset(data: PasswordReset, db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(User).where(User.password_reset_token == data.token))
+    user = result.scalars().first()
+    if not user or user.password_reset_expires_at < datetime.utcnow():
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid or expired reset token")
+
+    user.password_hashed = hash_password(data.password)
+    user.password_reset_token = None
+    user.password_reset_expires_at = None
+    await db.commit()
+    return{
+        "message" : "Password reset successfuly"
+    }
+

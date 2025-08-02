@@ -42,8 +42,9 @@ def verify_token(token: str) -> dict:
             detail="Invalid TOken",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    
-def generate_refresh_token() -> str:
+
+# this a token for email verification
+def generate_verification_token() -> str:
     return str(uuid.uuid4())
 
 def set_refresh_token_cookie(response: Response, refresh_token:str) :

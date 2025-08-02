@@ -30,9 +30,8 @@ class User(Base):
     auth_provider : Mapped[AuthProviders] = mapped_column(Enum(AuthProviders), nullable=False, default=AuthProviders.EMAIL)
     oauth_id : Mapped[Optional[str]] = mapped_column(String(255), nullable=True, index=True)    # external OAuth ID
     last_login_at: Mapped[Optional[DateTime]] = mapped_column(DateTime(timezone=True), nullable=True)
-    refresh_token : Mapped[Optional[str]] = mapped_column(String(255), nullable=True)  # For token refresh
-    password_reset_expires_at: Mapped[Optional[DateTime]] =  mapped_column(DateTime(timezone=True),nullable=True)
     failed_login_attempts: Mapped[int] = mapped_column(Integer, default=0)
+    account_lockout_expiry: Mapped[Optional[DateTime]] = mapped_column(DateTime(timezone=True), nullable=True)
 
     # user info
     first_name : Mapped[str] = mapped_column(String(255), nullable=False)
@@ -43,6 +42,8 @@ class User(Base):
     is_verified : Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     email_verification_token : Mapped[Optional[str]] = mapped_column(String, nullable=False)
     password_reset_token: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    password_reset_expires_at: Mapped[Optional[DateTime]] =  mapped_column(DateTime(timezone=True),nullable=True)
+    refresh_token : Mapped[Optional[str]] = mapped_column(String(255), nullable=True)  # For token refresh
     
     created_at : Mapped[DateTime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at : Mapped[DateTime] = mapped_column(DateTime(timezone=True),server_default=func.now(), onupdate=func.now())
