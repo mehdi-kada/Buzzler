@@ -5,6 +5,8 @@ backend/venv/
 # byte-compiled / cache files
 backend/app/__pycache__/
 backend/*.pyc
+**/__pycache__/
+**/*.py[cod]
 
 # docker files
 **/db-data/
@@ -56,6 +58,7 @@ next-env.d.ts
 
 # Ignore all cache folders inside backend and its subfolders
 backend/**/__pycache__/
+backend/app/*/__pycache__
 backend/**/cache/
 backend/**/Cache/
 

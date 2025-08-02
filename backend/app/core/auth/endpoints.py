@@ -1,13 +1,13 @@
 # Depenedcry to get user (verify them )
 from datetime import datetime
-from fastapi import APIRouter, Depends, HTTPException, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.database import get_db
 from app.models.user import AuthProviders, User
-from app.core.auth.helpers_functions import create_access_token, create_refresh_token, generate_refresh_token, hash_password, hash_token, set_refresh_token_cookie, verify_password, verify_token
+from app.core.auth.helpers_functions import create_access_token, create_refresh_token, generate_refresh_token, hash_password, hash_token, set_refresh_token_cookie, verify_hash_token, verify_password, verify_token
 from app.schemas.user import TokenResponse, UserBase, UserResponse
 
 
@@ -72,7 +72,7 @@ async def login(response: Response ,user_form: OAuth2PasswordRequestForm = Depen
     """
     Logs user in, returns access token and sets refresh token in cookie.
     """
-    result = await db.execute(select(User).where(User.email == user_form.email))
+    result = await db.execute(select(User).where(User.email == user_form.username))
     user = result.scalars().first()
     if not user or not verify_password(user_form.password, user.password_hashed) : 
         if user:
@@ -92,10 +92,11 @@ async def login(response: Response ,user_form: OAuth2PasswordRequestForm = Depen
             status_code= status.HTTP_403_FORBIDDEN,
             detail= "email not verified"
         )
-    
+    # reset the failed attemptes
     user.failed_login_attempts= 0
     user.last_login_at= datetime.utcnow()
 
+    # create the tokens 
     access_token = create_access_token(data={"sub": user.email})
     refresh_token = create_refresh_token(data={"sub": user.email})
     user.refresh_token = hash_token(refresh_token)
@@ -104,3 +105,36 @@ async def login(response: Response ,user_form: OAuth2PasswordRequestForm = Depen
     set_refresh_token_cookie(response, refresh_token)
 
     return TokenResponse(access_token=access_token, token_type="bearer")
+
+
+@router.post("/refresh", response_model=TokenResponse)
+async def refresh_token(request:Request, db : AsyncSession = Depends(get_db), response: Response = None ):
+
+    refresh_token= request.cookies.get("refrzsrefresh_token")
+    if not refresh_token: 
+        raise HTTPException(
+            status_code= status.HTTP_401_UNAUTHORIZED,
+            detail= "no refresh token provided"
+        )
+    # verify the token:
+    payload = verify_token(refresh_token)
+    if payload.get("type") != "refresh":
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token type")
+    
+    email = payload.get("sub")
+    if not email:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
+    
+    result = await db.execute(select(User).where(User.email == email))
+    user = result.scalars().first()
+
+    if not user or not verify_hash_token(refresh_token, user.refresh_token):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token")
+
+    # if everything is valid , generate an new access token:
+    access_token = create_access_token(data={"sub": user.email})
+
+    return TokenResponse(
+        access_token= access_token,
+        token_type= "bearer" 
+    )

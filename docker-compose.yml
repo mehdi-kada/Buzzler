@@ -37,6 +37,9 @@ services:
   db:
     # Use the official postgres image, version 15
     image: postgres:16
+    # Expose port 5433 on the host and map it to port 5432 in the container
+    ports:
+      - "5433:5432"
     # Set environment variables for the database (name, user, password)
     environment:
       POSTGRES_DB: Buzzler

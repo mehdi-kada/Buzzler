@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 import uuid
 from fastapi import HTTPException, status, Response
 from passlib.context import CryptContext
@@ -22,13 +22,13 @@ def verify_hash_token(token: str, hashed_token: str)-> bool:
 
 def create_access_token(data:dict) ->str:
     to_encode = data.copy()
-    expire = datetime.utcnow() + datetime.timedelta(minutes=Settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    expire = datetime.utcnow() + timedelta(minutes=Settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     to_encode.update({"exp":expire, "type":"access"})
     return jwt.encode(to_encode, Settings.SECRET_KEY, algorithm=Settings.ALGORITHM)
 
 def create_refresh_token(data:dict) -> str : 
     to_encode = data.copy()
-    expire = datetime.utcnow() + datetime.timedelta(days=Settings.REFRESH_TOKEN_EXPIRE_DAYS)
+    expire = datetime.utcnow() + timedelta(days=Settings.REFRESH_TOKEN_EXPIRE_DAYS)
     to_encode.update({"exp": expire, "type":"refresh"})
     return jwt.encode(to_encode, Settings.SECRET_KEY, algorithm=Settings.ALGORITHM)
 
