@@ -1,26 +1,8 @@
 from typing import Optional
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy import JSON, String, Integer, DateTime, Boolean, Enum, Text, ForeignKey, Index, func
-import enum
-
+from app.models.enums import TemplateType, SocialPlatform
 from app.db.database import Base
-
-
-
-
-class TemplateType(enum.Enum):
-    POST_TEMPLATE = "post_template"
-    HASHTAG_SET = "hashtag_set"
-    CONTENT_SERIES = "content_series"
-    CAMPAIGN = "campaign"
-
-class SocialPlatform(enum.Enum):
-    TWITTER = "twitter"
-    INSTAGRAM = "instagram"
-    LINKEDIN = "linkedin"
-    FACEBOOK = "facebook"
-    TIKTOK = "tiktok"
-    YOUTUBE_SHORTS = "youtube_shorts"
 
 class ContentTemplate(Base):
     """

@@ -1,18 +1,8 @@
-from typing import Optional
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
-from sqlalchemy import JSON, String, Integer, DateTime, Boolean, Enum, Text, Index, ForeignKey
-from sqlalchemy.sql import func
-import enum
-
+from app.models.enums import ProjectStatus
 from app.db.database import Base
-
-
-
-class ProjectStatus(enum.Enum):
-    DRAFT = "draft"
-    PROCESSING = "processing" 
-    COMPLETED = "completed"
-    FAILED = "failed"
+from typing import Optional                                                                                                                
+from sqlalchemy.orm import Mapped, mapped_column, relationship                                                                                
+from sqlalchemy import JSON, String, Integer, DateTime, Enum, Text, ForeignKey, Index, Float, Date, UniqueConstraint, func     
 
 
 class Project(Base):

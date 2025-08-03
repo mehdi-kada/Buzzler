@@ -1,26 +1,8 @@
-# file_storage.py - Track all uploaded files
-from typing import Optional
-from sqlalchemy.orm import Mapped, mapped_column
-from sqlalchemy import String, Integer, DateTime, Boolean, Enum, Index, func
-import enum
-
+from app.models.enums import EntityType, FileType
 from app.db.database import Base
-
-
-class EntityType(enum.Enum):
-    VIDEO = "video"
-    CLIP = "clip"
-    USER_AVATAR = "user_avatar"
-    POST = "post"
-    TRANSCRIPT = "transcript"
-
-
-class FileType(enum.Enum):
-    VIDEO = "video"
-    THUMBNAIL = "thumbnail"
-    AUDIO = "audio"
-    TRANSCRIPT = "transcript"
-    EXPORT = "export"
+from typing import Optional                                                                                                                
+from sqlalchemy.orm import Mapped, mapped_column, relationship                                                                                
+from sqlalchemy import JSON, Boolean, String, Integer, DateTime, Enum, Text, ForeignKey, Index, Float, Date, UniqueConstraint, func     
 
 class FileStorage(Base):
 

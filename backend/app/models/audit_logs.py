@@ -1,18 +1,5 @@
-from typing import Optional
-from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy import JSON, String, Integer, DateTime, Enum, Text, ForeignKey, Index, func
-import enum
-
+from app.models.enums import ActionType
 from app.db.database import Base
-class ActionType(enum.Enum):
-    USER_LOGIN = "user_login"
-    USER_LOGOUT = "user_logout"
-    VIDEO_UPLOAD = "video_upload"
-    CLIP_GENERATED = "clip_generated"
-    POST_PUBLISHED = "post_published"
-    ACCOUNT_CONNECTED = "account_connected"
-    SETTINGS_CHANGED = "settings_changed"
-    FILE_DOWNLOADED = "file_downloaded"
 
 class AuditLog(Base):
 

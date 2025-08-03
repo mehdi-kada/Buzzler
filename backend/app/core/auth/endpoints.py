@@ -7,9 +7,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from urllib.parse import urlencode
 from app.db.database import get_db
 from app.models.user import AuthProviders, User
-from app.core.auth.helpers_functions import clear_refresh_cookie, create_access_token, create_refresh_token, generate_verification_token, hash_password, hash_token, set_refresh_token_cookie, verify_hash_token, verify_password, verify_token
+from app.core.auth.helpers_functions import clear_refresh_cookie, create_access_token, create_refresh_token, generate_verification_token, hash_password, hash_token, send_password_verification_email, send_verification_email, set_refresh_token_cookie, verify_hash_token, verify_password, verify_token
 from app.schemas.user import PasswordReset, TokenResponse, UserBase, UserResponse
-from backend.app.core.config import Settings
+from app.core.config import Settings
 from httpx import AsyncClient
 
 
@@ -66,7 +66,7 @@ async def register(user_data: UserBase ,response: Response, db: AsyncSession= De
     await db.refresh(new_user)
 
     # send the verification email 
-    # await send_verification_email(new_user.email, verification_token)
+    await send_verification_email(new_user.email, verification_token)
 
     return new_user
 
@@ -111,7 +111,7 @@ async def login(response: Response ,user_form: OAuth2PasswordRequestForm = Depen
     if not user.is_verified:
         raise HTTPException(
             status_code= status.HTTP_403_FORBIDDEN,
-            detail= "email not verified"
+            detail= "Account not verified"
         )
     # reset the failed attemptes
     user.failed_login_attempts= 0
@@ -172,7 +172,7 @@ async def log_out(response: Response, db: AsyncSession= Depends(get_db), user: U
     }
 
 
-@router.post("/verify-email")
+@router.post("/verify-account")
 async def verify_email(token: str, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(User).where(User.email_verification_token == token))
     user = result.scalars().first()
@@ -229,7 +229,7 @@ async def google_login():
     return {"redirect_url": google_auth_url}
 
 
-@router.post("/oauth/callback", response_model=TokenResponse)
+@router.get("/oauth/callback", response_model=TokenResponse)
 async def oauth_callback(
     code: str,
     provider: str,
@@ -251,7 +251,7 @@ async def oauth_callback(
                 },
             )
 
-            token_data = await token_response.json()
+            token_data =  token_response.json()
             if "error" in token_data:
                 raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="OAuth error")
             
@@ -306,3 +306,5 @@ async def oauth_callback(
                 access_token=access_token,
                 token_type="bearer" 
             )
+        
+

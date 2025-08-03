@@ -1,17 +1,8 @@
-from typing import Optional
-from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy import JSON, String, Integer, DateTime, Enum, Text, ForeignKey, Index, Float, func
-import enum
-
-
+from app.models.enums import PostStatus
 from app.db.database import Base
-
-class PostStatus(enum.Enum):
-    DRAFT = "draft"
-    SCHEDULED = "scheduled"
-    PUBLISHING = "publishing"
-    PUBLISHED = "published"
-    FAILED = "failed"
+from typing import Optional                                                                                                                
+from sqlalchemy.orm import Mapped, mapped_column, relationship                                                                                
+from sqlalchemy import JSON, String, Integer, DateTime, Enum, Text, ForeignKey, Index, Float, Date, UniqueConstraint, func     
 
 class Post(Base):
     """

@@ -4,7 +4,8 @@ from fastapi import HTTPException, status, Response
 from passlib.context import CryptContext
 from jose import JWTError, jwt
 from app.core.config import Settings
-
+from email.message import EmailMessage
+import aiosmtplib
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -66,4 +67,39 @@ def clear_refresh_cookie(response: Response):
         secure=False,  # match from above
         samesite="lax",
         domain=Settings.COOKIE_DOMAIN
+    )
+
+
+async def send_verification_email(email:str, token:str):
+    message = EmailMessage()
+    message["From"] = Settings.SENDER_EMAIL
+    message["To"] = email
+    message["Subject"] = "Verify Your Buzzler Account"
+    verification_url = f"http://localhost:3000/auth//verify-account?token={token}"
+    message.set_content(f"Please verify your email by clicking this link : {verification_url}")
+
+    await aiosmtplib.send(
+        message,
+        hostname=Settings.SMTP_HOST,
+        port=Settings.SMTP_PORT,
+        username=Settings.SMTP_USERNAME,
+        password=Settings.SMTP_PASSWORD,
+        use_tls=True,
+    )
+
+async def send_password_verification_email(email:str, token:str):
+    message = EmailMessage()
+    message["From"] = Settings.SENDER_EMAIL
+    message["To"] = email
+    message["Subject"] = "Reset your Buzzler account password"
+    verification_url = f"http://localhost:3000/auth/password-reset?token={token}"
+    message.set_content(f"You can reset your password by clicking on this link: {verification_url}")
+
+    await aiosmtplib.send(
+        message,
+        hostname=Settings.SMTP_HOST,
+        port=Settings.SMTP_PORT,
+        username=Settings.SMTP_USERNAME,
+        password=Settings.SMTP_PASSWORD,
+        use_tls=True,
     )

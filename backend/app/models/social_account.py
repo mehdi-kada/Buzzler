@@ -1,25 +1,8 @@
 from typing import Optional
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy import JSON, String, Integer, DateTime, Enum, Text, ForeignKey, Index, UniqueConstraint, func
-import enum
-
-from app.db.database import Base
-
-
-
-class SocialPlatform(enum.Enum):
-    TWITTER = "twitter"
-    INSTAGRAM = "instagram"
-    LINKEDIN = "linkedin"
-    FACEBOOK = "facebook"
-    TIKTOK = "tiktok"
-    YOUTUBE_SHORTS = "youtube"
-
-class AccountStatus(enum.Enum):
-    CONNECTED = "connected"
-    EXPIRED = "expired"        
-    REVOKED = "revoked"       
-    ERROR = "error"            
+from app.models.enums import SocialPlatform, AccountStatus
+from app.db.database import Base            
 
 
 

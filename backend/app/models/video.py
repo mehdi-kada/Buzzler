@@ -1,25 +1,8 @@
-# videos.py - Core video storage and processing
-from typing import Optional
-from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy import JSON, String, Integer, DateTime, Enum, Text, ForeignKey, Index, Float, func
-import enum
-
-
+from app.models.enums import VideoSource, VideoStatus
 from app.db.database import Base
-
-
-
-class VideoSource(enum.Enum):
-    UPLOAD = "upload"
-    URL_IMPORT  = "url_import"
-
-class VideoStatus(enum.Enum):
-    UPLOADING = "uploading"
-    UPLOADED = "uploaded"
-    TRANSCRIBING = "transcribing"
-    ANALYZING = "analyzing"
-    READY = "ready"
-    FAILED = "failed"
+from typing import Optional                                                                                                                
+from sqlalchemy.orm import Mapped, mapped_column, relationship                                                                                
+from sqlalchemy import JSON, String, Integer, DateTime, Enum, Text, ForeignKey, Index, Float, Date, UniqueConstraint, func     
 
 class Video(Base):
     """

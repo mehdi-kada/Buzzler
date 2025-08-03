@@ -1,18 +1,8 @@
-# analytics.py - Performance tracking and insights
 from typing import Optional
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy import Boolean, String, Integer, DateTime, Enum, Text, ForeignKey, Index, Float, Date, UniqueConstraint, func
-import enum
-
-
+from app.models.enums import InsightType
 from app.db.database import Base
-
-class InsightType(enum.Enum):
-    BEST_POSTING_TIME = "best_posting_time"
-    TRENDING_TOPICS = "trending_topics"
-    VIRAL_PREDICTION = "viral_prediction"
-    AUDIENCE_PREFERENCE = "audience_preference"
-    CONTENT_OPTIMIZATION = "content_optimization"
 
 
 class AIInsight(Base):

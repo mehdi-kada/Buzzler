@@ -1,20 +1,8 @@
-from typing import Optional
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
-from sqlalchemy import String, Integer, DateTime, Boolean, Enum, Text, Index
-from sqlalchemy.sql import func
-import enum
-
+from app.models.enums import AuthProviders, UserPlan
 from app.db.database import Base
-
-class AuthProviders(enum.Enum):
-    EMAIL = "EMAIL"
-    GOOGLE = "GOOGLE"
-    X = "X"
-
-class UserPlan(enum.Enum):
-    FREE = "free"
-    BASIC = "basic"
-    PRO = "pro"
+from typing import Optional                                                                                                                
+from sqlalchemy.orm import Mapped, mapped_column, relationship                                                                                
+from sqlalchemy import JSON, Boolean, String, Integer, DateTime, Enum, Text, ForeignKey, Index, Float, Date, UniqueConstraint, func     
 
 class User(Base):
     """
@@ -40,7 +28,7 @@ class User(Base):
     # account status 
     is_active : Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     is_verified : Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
-    email_verification_token : Mapped[Optional[str]] = mapped_column(String, nullable=False)
+    email_verification_token : Mapped[Optional[str]] = mapped_column(String, nullable=True)
     password_reset_token: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     password_reset_expires_at: Mapped[Optional[DateTime]] =  mapped_column(DateTime(timezone=True),nullable=True)
     refresh_token : Mapped[Optional[str]] = mapped_column(String(255), nullable=True)  # For token refresh

@@ -1,23 +1,8 @@
-from typing import Optional
+from app.models.enums import ClipFormat, ClipStatus
 from app.db.database import Base
-from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy import JSON, String, Integer, DateTime, Enum, Text, ForeignKey, Index, func
-import enum
-
-
-
-
-class ClipFormat(enum.Enum):
-    VERTICAL_9_16 = "9:16"      # TikTok, Instagram Reels
-    SQUARE_1_1 = "1:1"          # Instagram Square
-    HORIZONTAL_16_9 = "16:9"    # YouTube, LinkedIn
-
-class ClipStatus(enum.Enum):
-    PENDING = "pending"
-    PROCESSING = "processing"
-    READY = "ready"
-    FAILED = "failed"
-
+from typing import Optional                                                                                                                
+from sqlalchemy.orm import Mapped, mapped_column, relationship                                                                                
+from sqlalchemy import JSON, String, Integer, DateTime, Enum, Text, ForeignKey, Index, Float, Date, UniqueConstraint, func     
 
 class Clip(Base):
     """

@@ -1,4 +1,5 @@
 # Import all models to ensure SQLAlchemy registers them
+from .enums import *
 from .ai_analytics import *
 from .analytics_data import *
 from .audit_logs import *

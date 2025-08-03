@@ -1,18 +1,8 @@
-# analytics.py - Performance tracking and insights
-from typing import Optional
-from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy import JSON, String, Integer, DateTime, Enum, Text, ForeignKey, Index, Float, Date, UniqueConstraint, func
-import enum
-
-
+from app.models.enums import AnalyticsType
 from app.db.database import Base
-
-class AnalyticsType(enum.Enum):
-    POST_PERFORMANCE = "post_performance"
-    ACCOUNT_GROWTH = "account_growth"
-    ENGAGEMENT_TRENDS = "engagement_trends"
-    AUDIENCE_INSIGHTS = "audience_insights"
-
+from typing import Optional                                                                                                                   
+from sqlalchemy.orm import Mapped, mapped_column, relationship                                                                                
+from sqlalchemy import JSON, String, Integer, DateTime, Enum, Text, ForeignKey, Index, Float, Date, UniqueConstraint, func     
 
 class AnalyticsData(Base):
     """
