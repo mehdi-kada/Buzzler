@@ -103,3 +103,15 @@ async def send_password_verification_email(email:str, token:str):
         password=Settings.SMTP_PASSWORD,
         use_tls=True,
     )
+
+async def issue_tokens_and_set_cookie(user, response: Response, db) -> str:
+    """Creates tokens, stores the refresh token hash, and sets the cookie."""
+    access_token = create_access_token(data={"sub": user.email})
+    refresh_token = create_refresh_token(data={"sub": user.email})
+    
+    user.refresh_token = hash_token(refresh_token)
+    await db.commit()
+    
+    set_refresh_token_cookie(response, refresh_token)
+    
+    return access_token

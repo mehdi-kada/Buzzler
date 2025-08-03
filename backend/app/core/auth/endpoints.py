@@ -7,11 +7,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from urllib.parse import urlencode
 from app.db.database import get_db
 from app.models.user import AuthProviders, User
-from app.core.auth.helpers_functions import clear_refresh_cookie, create_access_token, create_refresh_token, generate_verification_token, hash_password, hash_token, send_password_verification_email, send_verification_email, set_refresh_token_cookie, verify_hash_token, verify_password, verify_token
-from app.schemas.user import PasswordReset, TokenResponse, UserBase, UserResponse
+from app.core.auth.helpers_functions import clear_refresh_cookie, create_access_token, create_refresh_token, generate_verification_token, hash_password, hash_token, issue_tokens_and_set_cookie, send_password_verification_email, send_verification_email, set_refresh_token_cookie, verify_hash_token, verify_password, verify_token
+from app.schemas.user import EmailSchema, PasswordReset, TokenResponse, UserBase, UserResponse
 from app.core.config import Settings
 from httpx import AsyncClient
-
+from app.core.auth.providers import get_provider
 
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -54,12 +54,13 @@ async def register(user_data: UserBase ,response: Response, db: AsyncSession= De
     
     hashed_password = hash_password(user_data.password)
     verification_token = generate_verification_token()
+    hashed_verification_token = hash_token(verification_token)
     new_user= User(
         email= user_data.email,
         password_hashed= hashed_password,
         first_name= user_data.first_name,
         auth_provider= AuthProviders.EMAIL,
-        email_verification_token= verification_token,
+        email_verification_token= hashed_verification_token,
     )
     db.add(new_user)
     await db.commit()
@@ -117,16 +118,10 @@ async def login(response: Response ,user_form: OAuth2PasswordRequestForm = Depen
     user.failed_login_attempts= 0
     user.last_login_at= datetime.utcnow()
     user.account_lockout_expiry = None
-    # create the tokens 
-    access_token = create_access_token(data={"sub": user.email})
-    refresh_token = create_refresh_token(data={"sub": user.email})
-    user.refresh_token = hash_token(refresh_token)
-    await db.commit()
-
-    set_refresh_token_cookie(response, refresh_token)
+    
+    access_token = await issue_tokens_and_set_cookie(user, response, db)
 
     return TokenResponse(access_token=access_token, token_type="bearer")
-
 
 @router.post("/refresh", response_model=TokenResponse)
 async def refresh_token(request:Request,response: Response, db : AsyncSession = Depends(get_db) ):
@@ -154,8 +149,13 @@ async def refresh_token(request:Request,response: Response, db : AsyncSession = 
     if not user or not verify_hash_token(refresh_token, user.refresh_token):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token")
 
-    # if everything is valid , generate an new access token:
+    # if everything is valid , generate an new access token and a new refresh token
     access_token = create_access_token(data={"sub": user.email})
+    new_refresh_token = create_refresh_token(data={"sub": user.email})
+    user.refresh_token = hash_token(new_refresh_token)
+    await db.commit()
+
+    set_refresh_token_cookie(response, new_refresh_token)
 
     return TokenResponse(
         access_token= access_token,
@@ -174,7 +174,8 @@ async def log_out(response: Response, db: AsyncSession= Depends(get_db), user: U
 
 @router.post("/verify-account")
 async def verify_email(token: str, db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(User).where(User.email_verification_token == token))
+    hashed_token = hash_token(token)
+    result = await db.execute(select(User).where(User.email_verification_token == hashed_token))
     user = result.scalars().first()
     if not user:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid verification token")
@@ -187,24 +188,26 @@ async def verify_email(token: str, db: AsyncSession = Depends(get_db)):
 
 
 @router.post("/password-reset-request")
-async def password_reset_request (email:str, db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(User).where(User.email == email))
+async def password_reset_request (data: EmailSchema, db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(User).where(User.email == data.email))
     user = result.scalars().first()
-    if not user:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Email not found")
-    token = generate_verification_token()
-    user.password_reset_token = token
-    user.password_reset_expires_at = datetime.utcnow() + timedelta(hours=1)
-    await db.commit()
+    if user:
+        token = generate_verification_token()
+        hashed_token = hash_token(token)
+        user.password_reset_token = hashed_token
+        user.password_reset_expires_at = datetime.utcnow() + timedelta(hours=1)
+        await db.commit()
 
-    await send_password_verification_email(user.email, token)
+        await send_password_verification_email(user.email, token)
+    
     return{
-        "message": "email sent successfully"
+        "message": "If an account with that email exists, a password reset link has been sent."
     }
 
 @router.post("/password-reset")
 async def password_reset(data: PasswordReset, db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(User).where(User.password_reset_token == data.token))
+    hashed_token = hash_token(data.token)
+    result = await db.execute(select(User).where(User.password_reset_token == hashed_token))
     user = result.scalars().first()
     if not user or user.password_reset_expires_at < datetime.utcnow():
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid or expired reset token")
@@ -237,74 +240,50 @@ async def oauth_callback(
     response: Response = None,
 ):
     """Handle OAuth callback and create/login user."""
+    oauth_provider = get_provider(provider)
+    user_data = await oauth_provider.get_user_info(code)
 
-    async with AsyncClient() as client:
-        if provider == "google":
-            token_response = await client.post(
-                "https://oauth2.googleapis.com/token",
-                data={
-                    "code": code,
-                    "client_id": Settings.GOOGLE_CLIENT_ID,
-                    "client_secret": Settings.GOOGLE_CLIENT_SECRET,
-                    "redirect_uri": Settings.REDIRECT_URI,
-                    "grant_type": "authorization_code",
-                },
-            )
+    email = user_data["email"]
+    oauth_id = user_data["oauth_id"]
+    first_name = user_data.get("first_name", "User")
+    
+    if provider == "google":
+        auth_provider = AuthProviders.GOOGLE
+    else:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Unsupported provider")
 
-            token_data =  token_response.json()
-            if "error" in token_data:
-                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="OAuth error")
-            
-            # use the token to get the user's info
-            user_info = await client.get(
-                "https://www.googleapis.com/oauth2/v2/userinfo",
-                headers={"Authorization": f"Bearer {token_data['access_token']}"}
-            )
-            user_data = user_info.json()
-            email = user_data["email"]
-            oauth_id = user_data["id"]
-            first_name = user_data.get("given_name", "User")
-            auth_provider = AuthProviders.GOOGLE
-        else:
-                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Unsupported provider")
-        
-        # before we push the user to database , check if he already exists link accounts for best user UX
-        result = await db.execute(select(User).where(User.oauth_id == oauth_id))
-        user = result.scalars().first()
+    result = await db.execute(select(User).where(User.oauth_id == oauth_id))
+    user = result.scalars().first()
 
-        if not user:
-            # check if the email exists with any provider
-            result = await db.execute(select(User).where(User.email == email))
-            existing_user = result.scalars().first()
+    if not user:
+        # check if the email exists with any provider, if it does link it to user account
+        result = await db.execute(select(User).where(User.email == email))
+        existing_user = result.scalars().first()
 
-            if existing_user:
-                existing_user.oauth_id = oauth_id
-                existing_user.auth_provider = AuthProviders.GOOGLE
-                existing_user.is_verified = True
-                user = existing_user
-                await db.commit()
-            
-            else:
-                user = User(
-                    email= email,
-                    oauth_id= oauth_id,
-                    auth_provider= auth_provider,
-                    first_name= first_name,
-                    is_verified= True
-                )
-                db.add(user)
-                await db.commit()
-                await db.refresh(user)
-
-            access_token = create_access_token(data={"sub": email})
-            refresh_token = create_refresh_token(data={"sub": email})
-            user.refresh_token = hash_token(refresh_token)
+        if existing_user:
+            existing_user.oauth_id = oauth_id
+            existing_user.auth_provider = auth_provider
+            existing_user.is_verified = True
+            user = existing_user
             await db.commit()
-            set_refresh_token_cookie(response, refresh_token)
-            
-            return TokenResponse(
-                access_token=access_token,
-                token_type="bearer" 
+        
+        else:
+            user = User(
+                email= email,
+                oauth_id= oauth_id,
+                auth_provider= auth_provider,
+                first_name= first_name,
+                is_verified= True
             )
+            db.add(user)
+            await db.commit()
+            await db.refresh(user)
+
+    access_token = await issue_tokens_and_set_cookie(user, response, db)
+    
+    return TokenResponse(
+        access_token=access_token,
+        token_type="bearer" 
+    )
         
 
