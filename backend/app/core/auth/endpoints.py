@@ -4,11 +4,14 @@ from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-
+from urllib.parse import urlencode
 from app.db.database import get_db
 from app.models.user import AuthProviders, User
 from app.core.auth.helpers_functions import clear_refresh_cookie, create_access_token, create_refresh_token, generate_verification_token, hash_password, hash_token, set_refresh_token_cookie, verify_hash_token, verify_password, verify_token
 from app.schemas.user import PasswordReset, TokenResponse, UserBase, UserResponse
+from backend.app.core.config import Settings
+from httpx import AsyncClient
+
 
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -214,3 +217,92 @@ async def password_reset(data: PasswordReset, db: AsyncSession = Depends(get_db)
         "message" : "Password reset successfuly"
     }
 
+@router.get("/google/login")
+async def google_login():
+    params = {
+        "client_id": Settings.GOOGLE_CLIENT_ID,
+        "redirect_uri": Settings.REDIRECT_URI,
+        "response_type": "code",
+        "scope": "openid email profile",
+    }
+    google_auth_url = f"https://accounts.google.com/o/oauth2/v2/auth?{urlencode(params)}"
+    return {"redirect_url": google_auth_url}
+
+
+@router.post("/oauth/callback", response_model=TokenResponse)
+async def oauth_callback(
+    code: str,
+    provider: str,
+    db: AsyncSession = Depends(get_db),
+    response: Response = None,
+):
+    """Handle OAuth callback and create/login user."""
+
+    async with AsyncClient() as client:
+        if provider == "google":
+            token_response = await client.post(
+                "https://oauth2.googleapis.com/token",
+                data={
+                    "code": code,
+                    "client_id": Settings.GOOGLE_CLIENT_ID,
+                    "client_secret": Settings.GOOGLE_CLIENT_SECRET,
+                    "redirect_uri": Settings.REDIRECT_URI,
+                    "grant_type": "authorization_code",
+                },
+            )
+
+            token_data = await token_response.json()
+            if "error" in token_data:
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="OAuth error")
+            
+            # use the token to get the user's info
+            user_info = await client.get(
+                "https://www.googleapis.com/oauth2/v2/userinfo",
+                headers={"Authorization": f"Bearer {token_data['access_token']}"}
+            )
+            user_data = user_info.json()
+            email = user_data["email"]
+            oauth_id = user_data["id"]
+            first_name = user_data.get("given_name", "User")
+            auth_provider = AuthProviders.GOOGLE
+        else:
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Unsupported provider")
+        
+        # before we push the user to database , check if he already exists link accounts for best user UX
+        result = await db.execute(select(User).where(User.oauth_id == oauth_id))
+        user = result.scalars().first()
+
+        if not user:
+            # check if the email exists with any provider
+            result = await db.execute(select(User).where(User.email == email))
+            existing_user = result.scalars().first()
+
+            if existing_user:
+                existing_user.oauth_id = oauth_id
+                existing_user.auth_provider = AuthProviders.GOOGLE
+                existing_user.is_verified = True
+                user = existing_user
+                await db.commit()
+            
+            else:
+                user = User(
+                    email= email,
+                    oauth_id= oauth_id,
+                    auth_provider= auth_provider,
+                    first_name= first_name,
+                    is_verified= True
+                )
+                db.add(user)
+                await db.commit()
+                await db.refresh(user)
+
+            access_token = create_access_token(data={"sub": email})
+            refresh_token = create_refresh_token(data={"sub": email})
+            user.refresh_token = hash_token(refresh_token)
+            await db.commit()
+            set_refresh_token_cookie(response, refresh_token)
+            
+            return TokenResponse(
+                access_token=access_token,
+                token_type="bearer" 
+            )
