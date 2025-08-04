@@ -1,8 +1,9 @@
 from fastapi import Request, status
 from fastapi.responses import JSONResponse
 from app.core.security.csrf import csrf_protection
+from app.main import app
 
-class CSRFProtection:
+class CSRFMiddleware:
     def __init__(self):
         super().__init__(app)
 
