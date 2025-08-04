@@ -12,7 +12,7 @@ from app.schemas.user import EmailSchema, PasswordReset, TokenResponse, UserBase
 from app.core.config import Settings
 from httpx import AsyncClient
 from app.core.auth.providers import get_provider
-
+from app.core.security.csrf import csrf_protection
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 oauth_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
@@ -285,5 +285,15 @@ async def oauth_callback(
         access_token=access_token,
         token_type="bearer" 
     )
+
+@router.post("/csrf-token")
+async def generate_csrf_token(requsest: Request, response: Response):
+    csrf_token = csrf_protection.generate_csrf_token()
+    csrf_protection.set_csrf_cookie(response, csrf_token)
+
+    return{
+        "csrf_token": csrf_token,
+        "header_name": Settings.CSRF_HEADER_NAME
+    }
         
 

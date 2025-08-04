@@ -16,3 +16,4 @@ passlib[bcrypt]
 python-dotenv 
 aiosmtplib
 httpx
+itsdangerous

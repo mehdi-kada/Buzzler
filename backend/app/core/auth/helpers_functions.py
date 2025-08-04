@@ -53,7 +53,7 @@ def set_refresh_token_cookie(response: Response, refresh_token:str) :
         key= "refresh_token",
         value=refresh_token,
         httponly=True,
-        secure=False,  # set to true in production
+        secure=Settings.SECURE_COOKIES,  # set to true in production
         samesite="lax",
         domain=Settings.COOKIE_DOMAIN,
         max_age=Settings.REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60
