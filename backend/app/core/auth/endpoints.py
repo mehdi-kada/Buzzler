@@ -2,6 +2,7 @@
 from datetime import datetime,timedelta
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from fastapi.responses import RedirectResponse
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from urllib.parse import urlencode
@@ -232,59 +233,70 @@ async def google_login():
     return {"redirect_url": google_auth_url}
 
 
-@router.get("/oauth/callback", response_model=TokenResponse)
+@router.get("/oauth/callback")
 async def oauth_callback(
     code: str,
     provider: str,
     db: AsyncSession = Depends(get_db),
     response: Response = None,
 ):
-    """Handle OAuth callback and create/login user."""
-    oauth_provider = get_provider(provider)
-    user_data = await oauth_provider.get_user_info(code)
+    """Handle OAuth callback and redirect user to frontend."""
+    try:
+        oauth_provider = get_provider(provider)
+        user_data = await oauth_provider.get_user_info(code)
 
-    email = user_data["email"]
-    oauth_id = user_data["oauth_id"]
-    first_name = user_data.get("first_name", "User")
-    
-    if provider == "google":
-        auth_provider = AuthProviders.GOOGLE
-    else:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Unsupported provider")
-
-    result = await db.execute(select(User).where(User.oauth_id == oauth_id))
-    user = result.scalars().first()
-
-    if not user:
-        # check if the email exists with any provider, if it does link it to user account
-        result = await db.execute(select(User).where(User.email == email))
-        existing_user = result.scalars().first()
-
-        if existing_user:
-            existing_user.oauth_id = oauth_id
-            existing_user.auth_provider = auth_provider
-            existing_user.is_verified = True
-            user = existing_user
-            await db.commit()
+        email = user_data["email"]
+        oauth_id = user_data["oauth_id"]
+        first_name = user_data.get("first_name", "User")
         
+        if provider == "google":
+            auth_provider = AuthProviders.GOOGLE
         else:
-            user = User(
-                email= email,
-                oauth_id= oauth_id,
-                auth_provider= auth_provider,
-                first_name= first_name,
-                is_verified= True
-            )
-            db.add(user)
-            await db.commit()
-            await db.refresh(user)
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Unsupported provider")
 
-    access_token = await issue_tokens_and_set_cookie(user, response, db)
-    
-    return TokenResponse(
-        access_token=access_token,
-        token_type="bearer" 
-    )
+        result = await db.execute(select(User).where(User.oauth_id == oauth_id))
+        user = result.scalars().first()
+
+        if not user:
+            # check if the email exists with any provider, if it does link it to user account
+            result = await db.execute(select(User).where(User.email == email))
+            existing_user = result.scalars().first()
+
+            if existing_user:
+                existing_user.oauth_id = oauth_id
+                existing_user.auth_provider = auth_provider
+                existing_user.is_verified = True
+                user = existing_user
+                await db.commit()
+            
+            else:
+                user = User(
+                    email= email,
+                    oauth_id= oauth_id,
+                    auth_provider= auth_provider,
+                    first_name= first_name,
+                    is_verified= True
+                )
+                db.add(user)
+                await db.commit()
+                await db.refresh(user)
+
+        access_token = await issue_tokens_and_set_cookie(user, response, db)
+        
+        # Generate CSRF token for the session
+        csrf_token = csrf_protection.generate_csrf_token()
+        csrf_protection.set_csrf_cookie(response, csrf_token)
+        
+        # Redirect to frontend with success
+        frontend_url = "http://localhost:3000/auth/oauth/success"
+        redirect_url = f"{frontend_url}?token={access_token}&user={urlencode({'email': user.email, 'first_name': user.first_name})}"
+        
+        return RedirectResponse(url=redirect_url, status_code=302)
+        
+    except Exception as e:
+        # Redirect to frontend with error
+        error_url = f"http://localhost:3000/auth/login?error={urlencode({'message': str(e)})}"
+        return RedirectResponse(url=error_url, status_code=302)
 
 @router.post("/csrf-token")
 async def generate_csrf_token(requsest: Request, response: Response):

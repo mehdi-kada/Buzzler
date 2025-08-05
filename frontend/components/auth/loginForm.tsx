@@ -13,8 +13,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuthStore } from "@/lib/store/authStore";
 import api from "@/lib/axios";
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 
 async function getGoogleUrl() {
   try {
@@ -35,6 +35,19 @@ export function LoginForm({
   const [error, setError] = useState<string | null>(null);
   const login = useAuthStore((state) => state.login);
   const router = useRouter();
+  const searchParams = useSearchParams();
+
+  // Check for OAuth errors in URL parameters
+  useEffect(() => {
+    const urlError = searchParams.get("error");
+    if (urlError) {
+      if (urlError === "oauth_error") {
+        setError("Google login failed. Please try again.");
+      } else {
+        setError("An error occurred during login.");
+      }
+    }
+  }, [searchParams]);
 
   const handleGoogleLogin = async () => {
     const url = await getGoogleUrl();
