@@ -5,7 +5,7 @@ from typing import Optional
 from fastapi import Request, Response
 from itsdangerous import BadSignature, SignatureExpired, URLSafeTimedSerializer
 
-from backend.app.core.config import Settings
+from app.core.config import Settings
 
 
 class CSRFProtection:

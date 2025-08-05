@@ -10,7 +10,6 @@ class RateLimiter:
     
     def is_allowed(self, request: Request, max_requests: int = 5, window_seconds: int = 300) -> bool:
         """
-        Check if request is allowed based on rate limiting.
         Default: 5 requests per 5 minutes for login attempts
         """
         client_ip = self._get_client_ip(request)

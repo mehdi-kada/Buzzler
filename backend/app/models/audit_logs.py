@@ -1,5 +1,8 @@
 from app.models.enums import ActionType
 from app.db.database import Base
+from typing import Optional                                                                                                                   
+from sqlalchemy.orm import Mapped, mapped_column, relationship                                                                                
+from sqlalchemy import JSON, String, Integer, DateTime, Enum, Text, ForeignKey, Index, Float, Date, UniqueConstraint, func     
 
 class AuditLog(Base):
 

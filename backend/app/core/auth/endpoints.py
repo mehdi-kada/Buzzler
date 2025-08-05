@@ -14,7 +14,7 @@ from httpx import AsyncClient
 from app.core.auth.providers import get_provider
 from app.core.security.csrf import csrf_protection
 
-router = APIRouter(prefix="/auth", tags=["auth"])
+router = APIRouter()
 oauth_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
 async def get_current_user(token: str = Depends(oauth_scheme), db: AsyncSession = Depends(get_db)) -> User:

@@ -27,7 +27,7 @@ class CSRFMiddleware(BaseHTTPMiddleware):
             response = await call_next(request)
             return response
         
-        # Verify CSRF token for state-changing requests
+        # Verify CSRF token for ALL state-changing requests
         if not csrf_protection.verify_csrf_protection(request):
             return JSONResponse(
                 status_code=status.HTTP_403_FORBIDDEN,
