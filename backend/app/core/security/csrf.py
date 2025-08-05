@@ -52,7 +52,7 @@ class CSRFProtection:
         """Get CSRF token from header"""
         return request.headers.get(Settings.CSRF_HEADER_NAME)
 
-def verify_csrf_protection(self, request: Request) -> bool:
+    def verify_csrf_protection(self, request: Request) -> bool:
         """Verify CSRF protection for a request"""
         # Get tokens from cookie and header
         cookie_token = self.get_csrf_token_from_cookie(request)
