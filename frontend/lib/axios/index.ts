@@ -23,12 +23,19 @@ api.interceptors.request.use(
       config.method &&
       !["get", "head", "options"].includes(config.method.toLowerCase())
     ) {
+      // Skip CSRF for refresh endpoint as it uses httpOnly cookies
+      if (config.url === "/auth/refresh") {
+        return config;
+      }
+
       let csrfToken = getCsrfTokenFromCookie();
 
       if (!csrfToken) {
         try {
           const response = await axios.post(
-            "http://localhost:8000/auth/csrf-token"
+            "http://localhost:8000/auth/csrf-token",
+            {},
+            { withCredentials: true }
           );
           csrfToken = response.data.csrf_token;
         } catch (error) {
@@ -60,7 +67,7 @@ api.interceptors.response.use(
     ) {
       // Clear invalid CSRF token and retry
       document.cookie =
-        "csrf_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+        "csrf_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=localhost";
       if (!originalRequest._csrf_retry) {
         originalRequest._csrf_retry = true;
         return api(originalRequest);
@@ -76,7 +83,13 @@ api.interceptors.response.use(
         originalRequest.headers.Authorization = `Bearer ${data.access_token}`;
         return api(originalRequest);
       } catch (refreshError) {
+        console.log("Refresh token failed, logging out user");
         useAuthStore.getState().logout();
+        // Clear all cookies
+        document.cookie =
+          "refresh_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=localhost";
+        document.cookie =
+          "csrf_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=localhost";
         // Only redirect if not already on login page
         if (!window.location.pathname.includes("/auth/login")) {
           window.location.href = "/auth/login";

@@ -10,7 +10,7 @@ from app.core.security.csrf_middleware import CSRFMiddleware
 app = FastAPI()
 
 # Add CSRF middleware
-app.add_middleware(CSRFMiddleware)
+# app.add_middleware(CSRFMiddleware)  # Temporarily disabled for OAuth debugging
 
 app.add_middleware(CORSMiddleware)
 

@@ -16,8 +16,6 @@ services:
     depends_on:
       db:
         condition: service_healthy
-      redis:
-        condition: service_started
     # Mount the local ./backend folder into /app inside the container (for live code updates)
     volumes:
       - ./backend:/app
@@ -56,12 +54,6 @@ services:
       retries: 5
 
   # Redis service (used for caching or as a message broker, e.g., for Celery)
-  redis:
-    # Use the official redis image, version 7
-    image: redis:7
-    # Expose port 6379 on the host and map it to port 6379 in the container
-    ports:
-      - "6379:6379"
 
 # Declare named volumes used by services above
 volumes:

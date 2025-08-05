@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuthStore } from "@/lib/store/authStore";
+import axios from "axios";
 
 export default function OAuthSuccessPage() {
   const router = useRouter();
@@ -14,21 +15,43 @@ export default function OAuthSuccessPage() {
     const userParam = searchParams.get("user");
 
     if (token && userParam) {
-      try {
-        // Parse user data from URL parameter
-        const userData = JSON.parse(userParam);
+      const setupSession = async () => {
+        try {
+          // Parse user data from URL parameter
+          const userSearchParams = new URLSearchParams(userParam);
+          const userData = {
+            email: userSearchParams.get("email") || "",
+            first_name: userSearchParams.get("first_name") || "",
+          };
 
-        console.log("Parsed user data:", userData);
+          console.log("Parsed user data:", userData);
 
-        // Log the user in with the OAuth data
-        login(token, userData);
+          // Log the user in with the OAuth data first
+          login(token, userData);
 
-        // Redirect to dashboard
-        router.push("/dashboard");
-      } catch (error) {
-        console.error("Failed to parse OAuth user data:", error);
-        router.push("/auth/login?error=oauth_error");
-      }
+          // Setup session with refresh token and CSRF token
+          await axios.post(
+            "http://localhost:8000/auth/setup-session",
+            {},
+            {
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+              withCredentials: true,
+            }
+          );
+
+          console.log("Session setup completed successfully");
+
+          // Redirect to dashboard
+          router.push("/dashboard");
+        } catch (error) {
+          console.error("Failed to setup session:", error);
+          router.push("/auth/login?error=session_setup_failed");
+        }
+      };
+
+      setupSession();
     } else {
       // No token or user data, redirect to login with error
       console.log("Missing token or user data, redirecting to login");

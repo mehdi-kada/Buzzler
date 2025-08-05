@@ -12,9 +12,16 @@ class CSRFMiddleware(BaseHTTPMiddleware):
             "/redoc", 
             "/openapi.json",
             "/auth/oauth/callback",  # OAuth callbacks can't include CSRF tokens
-            "/auth/csrf-token",  # Allow getting CSRF token without validation
-            "/health",  # Health check endpoints
+            "/auth/csrf-token",      # Allow getting CSRF token without validation
+            "/auth/refresh",         # Refresh endpoint uses httponly cookie, not CSRF
+            "/auth/setup-session",   # Session setup after OAuth login
+            "/health",               # Health check endpoints
         }
+        
+        # Also exempt patterns
+        self.exempt_patterns = [
+            "/auth/oauth/",  # All OAuth related endpoints
+        ]
 
     async def dispatch(self, request: Request, call_next):
         # Skip CSRF for safe methods

@@ -19,7 +19,7 @@ class Settings:
     X_CLIENT_ID: str = os.getenv("X_CLIENT_ID")
     X_CLIENT_SECRET: str = os.getenv("X_CLIENT_SECRET")
     REDIRECT_URI: str = os.getenv("REDIRECT_URI")
-    COOKIE_DOMAIN: str = os.getenv("COOKIE_DOMAIN")
+    COOKIE_DOMAIN: str = os.getenv("COOKIE_DOMAIN", None)
     CSRF_SECRET_KEY: str = os.getenv("CSRF_SECRET_KEY", "your-csrf-secret-key-change-in-production")
     CSRF_TOKEN_EXPIRE_MINUTES: int = int(os.getenv("CSRF_TOKEN_EXPIRE_MINUTES", "60"))
     CSRF_COOKIE_NAME: str = "csrf_token"

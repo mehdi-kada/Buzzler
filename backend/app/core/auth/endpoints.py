@@ -133,35 +133,44 @@ async def refresh_token(request:Request,response: Response, db : AsyncSession = 
     if not refresh_token: 
         raise HTTPException(
             status_code= status.HTTP_401_UNAUTHORIZED,
-            detail= "no refresh token provided"
+            detail= "No refresh token provided. Please log in again."
         )
-    # verify the token:
-    payload = verify_token(refresh_token)
-    if payload.get("type") != "refresh":
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token type")
     
-    email = payload.get("sub")
-    if not email:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
-    
-    result = await db.execute(select(User).where(User.email == email))
-    user = result.scalars().first()
+    try:
+        # verify the token:
+        payload = verify_token(refresh_token)
+        if payload.get("type") != "refresh":
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token type")
+        
+        email = payload.get("sub")
+        if not email:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
+        
+        result = await db.execute(select(User).where(User.email == email))
+        user = result.scalars().first()
 
-    if not user or not verify_hash_token(refresh_token, user.refresh_token):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token")
+        if not user or not verify_hash_token(refresh_token, user.refresh_token):
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token")
 
-    # if everything is valid , generate an new access token and a new refresh token
-    access_token = create_access_token(data={"sub": user.email})
-    new_refresh_token = create_refresh_token(data={"sub": user.email})
-    user.refresh_token = hash_token(new_refresh_token)
-    await db.commit()
+        # if everything is valid , generate an new access token and a new refresh token
+        access_token = create_access_token(data={"sub": user.email})
+        new_refresh_token = create_refresh_token(data={"sub": user.email})
+        user.refresh_token = hash_token(new_refresh_token)
+        await db.commit()
 
-    set_refresh_token_cookie(response, new_refresh_token)
+        set_refresh_token_cookie(response, new_refresh_token)
 
-    return TokenResponse(
-        access_token= access_token,
-        token_type= "bearer" 
-    )
+        return TokenResponse(
+            access_token= access_token,
+            token_type= "bearer" 
+        )
+    except Exception as e:
+        # Clear invalid refresh token
+        clear_refresh_cookie(response)
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, 
+            detail="Invalid or expired refresh token. Please log in again."
+        )
 
 @router.post("/logout")
 async def log_out(response: Response, db: AsyncSession= Depends(get_db), user: User = Depends(get_current_user)):
@@ -281,11 +290,9 @@ async def oauth_callback(
                 await db.commit()
                 await db.refresh(user)
 
-        access_token = await issue_tokens_and_set_cookie(user, response, db)
-        
-        # Generate CSRF token for the session
-        csrf_token = csrf_protection.generate_csrf_token()
-        csrf_protection.set_csrf_cookie(response, csrf_token)
+        # Create access token but don't set refresh token yet
+        # Refresh token will be set by the setup-session endpoint
+        access_token = create_access_token(data={"sub": user.email})
         
         # Redirect to frontend with success
         frontend_url = "http://localhost:3000/auth/oauth/success"
@@ -297,6 +304,31 @@ async def oauth_callback(
         # Redirect to frontend with error
         error_url = f"http://localhost:3000/auth/login?error={urlencode({'message': str(e)})}"
         return RedirectResponse(url=error_url, status_code=302)
+
+@router.post("/setup-session")
+async def setup_session(response: Response, db: AsyncSession = Depends(get_db), user: User = Depends(get_current_user)):
+    """
+    Setup session with refresh token cookie after OAuth login.
+    This endpoint is called by the frontend after successful OAuth.
+    """
+    # Generate new refresh token
+    refresh_token = create_refresh_token(data={"sub": user.email})
+    
+    # Store hashed refresh token in database
+    user.refresh_token = hash_token(refresh_token)
+    await db.commit()
+    
+    # Set refresh token cookie
+    set_refresh_token_cookie(response, refresh_token)
+    
+    # Generate CSRF token
+    csrf_token = csrf_protection.generate_csrf_token()
+    csrf_protection.set_csrf_cookie(response, csrf_token)
+    
+    return {
+        "message": "Session setup successful",
+        "csrf_token": csrf_token
+    }
 
 @router.post("/csrf-token")
 async def generate_csrf_token(requsest: Request, response: Response):
