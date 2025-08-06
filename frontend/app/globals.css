@@ -516,12 +516,25 @@
     animation: glow 2s ease-in-out infinite alternate;
   }
 
+  .animate-pulse-slow {
+    animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
   /* Line Clamp Utility */
   .line-clamp-2 {
     overflow: hidden;
     display: -webkit-box;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 2;
+  }
+
+  /* Additional Animation Delays */
+  .animate-delay-1 {
+    animation-delay: 1s;
+  }
+
+  .animate-delay-2 {
+    animation-delay: 2s;
   }
 }
 
@@ -568,4 +581,122 @@
 * {
   scrollbar-width: thin;
   scrollbar-color: #dc2667 rgba(255, 255, 255, 0.1);
+}
+.gradient-bg {
+  background: radial-gradient(
+    ellipse at center,
+    rgba(139, 69, 19, 0.3) 0%,
+    rgba(0, 0, 0, 1) 70%
+  );
+}
+.glow-effect {
+  text-shadow: 0 0 20px rgba(220, 38, 127, 0.3);
+}
+.btn-primary {
+  background: linear-gradient(135deg, #dc2667, #f97316);
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(220, 38, 103, 0.3);
+}
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(220, 38, 103, 0.4);
+}
+.btn-secondary {
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
+  transition: all 0.3s ease;
+}
+.btn-secondary:hover {
+  border-color: #dc2667;
+  background: rgba(220, 38, 103, 0.1);
+}
+.auth-card {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+.form-input {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.3s ease;
+}
+.form-input:focus {
+  border-color: #dc2667;
+  background: rgba(220, 38, 103, 0.05);
+  outline: none;
+}
+.social-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  transition: all 0.3s ease;
+}
+.social-btn:hover {
+  border-color: rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.1);
+}
+.tab-button {
+  transition: all 0.3s ease;
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.5rem;
+}
+.tab-button.active {
+  background: linear-gradient(135deg, #dc2667, #f97316);
+  color: white;
+}
+.divider {
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.2),
+    transparent
+  );
+  height: 1px;
+}
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+/* Add these additional classes to your globals.css */
+
+@layer utilities {
+  /* Animation delay utilities for background elements */
+  .animate-delay-1 {
+    animation-delay: 1s;
+  }
+  
+  .animate-delay-2 {
+    animation-delay: 2s;
+  }
+  
+  /* Focus styles for better accessibility */
+  .form-input:focus-visible {
+    outline: 2px solid rgba(220, 38, 103, 0.5);
+    outline-offset: 2px;
+  }
+  
+  .btn-primary:focus-visible,
+  .btn-secondary:focus-visible,
+  .social-btn:focus-visible,
+  .tab-button:focus-visible {
+    outline: 2px solid rgba(220, 38, 103, 0.5);
+    outline-offset: 2px;
+  }
+}
+
+/* Enhanced tab button states */
+@layer components {
+  .tab-button:not(.active):hover {
+    @apply text-white;
+    background: rgba(255, 255, 255, 0.05);
+  }
 }
