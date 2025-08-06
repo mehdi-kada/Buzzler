@@ -11,7 +11,7 @@ const getCsrfTokenFromCookie = (): string | null => {
   return match ? match[1] : null;
 };
 
-// Request Interceptor used to automatically add both the access token and csrf token
+
 api.interceptors.request.use(
   async (config) => {
     const { accessToken } = useAuthStore.getState();
@@ -23,7 +23,6 @@ api.interceptors.request.use(
       config.method &&
       !["get", "head", "options"].includes(config.method.toLowerCase())
     ) {
-      // Skip CSRF for refresh endpoint as it uses httpOnly cookies
       if (config.url === "/auth/refresh") {
         return config;
       }
@@ -60,7 +59,6 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
-    // Handle CSRF errors
     if (
       error.response?.status === 403 &&
       error.response?.data?.detail?.includes("CSRF")
@@ -85,13 +83,8 @@ api.interceptors.response.use(
       } catch (refreshError) {
         console.log("Refresh token failed, logging out user");
         useAuthStore.getState().logout();
-        // Clear all cookies
-        document.cookie =
-          "refresh_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=localhost";
-        document.cookie =
-          "csrf_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=localhost";
-        // Only redirect if not already on login page
-        if (!window.location.pathname.includes("/auth/login")) {
+        
+        if (!window.location.pathname.includes("/auth/")) {
           window.location.href = "/auth/login";
         }
         return Promise.reject(refreshError);

@@ -72,10 +72,25 @@ export function LoginForm({
       });
 
       const { access_token } = response.data;
-      // Use the email from the form and create a basic user object
-      const user = { email, first_name: email.split("@")[0] };
-      login(access_token, user);
-      router.push("/dashboard"); // Redirect to protected dashboard
+
+      // Fetch user data from the /users/me endpoint
+      try {
+        const userResponse = await api.get("/users/me", {
+          headers: {
+            Authorization: `Bearer ${access_token}`,
+          },
+        });
+
+        const userData = userResponse.data;
+        login(access_token, userData);
+        router.push("/dashboard");
+      } catch (userError) {
+        // Fallback to email-based user data if /users/me fails
+        console.warn("Failed to fetch user data, using fallback");
+        const user = { email, first_name: email.split("@")[0] };
+        login(access_token, user);
+        router.push("/dashboard");
+      }
     } catch (err: any) {
       if (err.response) {
         setError(err.response.data.detail || "An error occurred");
