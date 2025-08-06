@@ -28,4 +28,5 @@ class Settings:
     COOKIE_SAMESITE: str = "lax"  
     BACKEND_URL: str = os.getenv("BACKEND_URL")
     FRONTEND_URL: str = os.getenv("FRONTEND_URL")
+    VERIFICATION_TOKEN_EXPIRE_HOURS: int = os.getenv("VERIFICATION_TOKEN_EXPIRE_HOURS")
 settings = Settings()

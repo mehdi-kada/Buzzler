@@ -14,6 +14,7 @@ from app.core.config import Settings
 from httpx import AsyncClient
 from app.core.auth.providers import get_provider
 from app.core.security.csrf import csrf_protection
+from jose import jwt, JWTError
 
 router = APIRouter()
 oauth_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
@@ -54,14 +55,12 @@ async def register(user_data: UserBase ,response: Response, db: AsyncSession= De
         )
     
     hashed_password = hash_password(user_data.password)
-    verification_token = generate_verification_token()
-    hashed_verification_token = hash_token(verification_token)
+    verification_token = generate_verification_token(user_data.email)
     new_user= User(
         email= user_data.email,
         password_hashed= hashed_password,
         first_name= user_data.first_name,
         auth_provider= AuthProviders.EMAIL,
-        email_verification_token= hashed_verification_token,
     )
     db.add(new_user)
     await db.commit()
@@ -184,21 +183,25 @@ async def log_out(response: Response, db: AsyncSession= Depends(get_db), user: U
 
 @router.get("/verify-account")
 async def verify_email(token: str, db: AsyncSession = Depends(get_db)):
-    # Get all users with verification tokens and check against each one
-    result = await db.execute(select(User).where(User.email_verification_token.isnot(None)))
-    users_with_tokens = result.scalars().all()
+    try : 
+        payload = jwt.decode(token, Settings.SECRET_KEY, Settings.ALGORITHM)
+        if payload.get("type") != "verification" : 
+            raise ValueError("Invalid token type")
+        
+        email = payload.get("sub")
+        if not email:
+            raise ValueError("Invalid token")
+    except JWTError :
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid or expired verification token")
     
-    user = None
-    for candidate_user in users_with_tokens:
-        if verify_hash_token(token, candidate_user.email_verification_token):
-            user = candidate_user
-            break
+    # Get all users with verification tokens and check against each one
+    result = await db.execute(select(User).where(User.email == email))
+    user = result.scalars().first()
     
     if not user:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid verification token")
-    
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="User not found")
+  
     user.is_verified = True
-    user.email_verification_token = None
     await db.commit()
     return RedirectResponse(f"http://localhost:3000/auth/verify-account?status=success")
 
