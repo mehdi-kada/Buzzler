@@ -12,10 +12,17 @@ services:
       - .env
     environment:
       - DATABASE_URL=postgresql+asyncpg://Buzzler_user:mahdi067279@db:5432/Buzzler
+      - SMTP_HOST=mailhog
+      - SMTP_PORT=1025
+      - SMTP_USERNAME=""
+      - SMTP_PASSWORD=""
+      - SENDER_EMAIL=noreply@buzzler.com
     # Wait for the db and redis services to be ready before starting
     depends_on:
       db:
         condition: service_healthy
+      mailhog:
+        condition: service_started
     # Mount the local ./backend folder into /app inside the container (for live code updates)
     volumes:
       - ./backend:/app
@@ -53,7 +60,17 @@ services:
       timeout: 5s
       retries: 5
 
-  # Redis service (used for caching or as a message broker, e.g., for Celery)
+  mailhog:
+    image: mailhog/mailhog
+    ports:
+      - "1025:1025" # SMTP port
+      - "8025:8025" # Web UI port
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "1025"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
 
 # Declare named volumes used by services above
 volumes:

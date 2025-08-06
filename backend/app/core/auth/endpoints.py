@@ -182,19 +182,25 @@ async def log_out(response: Response, db: AsyncSession= Depends(get_db), user: U
     }
 
 
-@router.post("/verify-account")
+@router.get("/verify-account")
 async def verify_email(token: str, db: AsyncSession = Depends(get_db)):
-    hashed_token = hash_token(token)
-    result = await db.execute(select(User).where(User.email_verification_token == hashed_token))
-    user = result.scalars().first()
+    # Get all users with verification tokens and check against each one
+    result = await db.execute(select(User).where(User.email_verification_token.isnot(None)))
+    users_with_tokens = result.scalars().all()
+    
+    user = None
+    for candidate_user in users_with_tokens:
+        if verify_hash_token(token, candidate_user.email_verification_token):
+            user = candidate_user
+            break
+    
     if not user:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid verification token")
+    
     user.is_verified = True
     user.email_verification_token = None
     await db.commit()
-    return{
-        "message": "email verification successfully "
-    }
+    return RedirectResponse(f"http://localhost:3000/auth/verify-account?status=success")
 
 
 @router.post("/password-reset-request")
@@ -252,6 +258,7 @@ async def oauth_callback(
     """Handle OAuth callback and redirect user to frontend."""
     try:
         oauth_provider = get_provider(provider)
+        # exchange the code for an access token
         user_data = await oauth_provider.get_user_info(code)
 
         email = user_data["email"]
@@ -290,7 +297,7 @@ async def oauth_callback(
                 await db.commit()
                 await db.refresh(user)
 
-        # Create access token but don't set refresh token yet
+        # Create access token but not the refresh token yet
         # Refresh token will be set by the setup-session endpoint
         access_token = create_access_token(data={"sub": user.email})
         
@@ -311,14 +318,12 @@ async def setup_session(response: Response, db: AsyncSession = Depends(get_db), 
     Setup session with refresh token cookie after OAuth login.
     This endpoint is called by the frontend after successful OAuth.
     """
-    # Generate new refresh token
+
     refresh_token = create_refresh_token(data={"sub": user.email})
     
-    # Store hashed refresh token in database
     user.refresh_token = hash_token(refresh_token)
     await db.commit()
     
-    # Set refresh token cookie
     set_refresh_token_cookie(response, refresh_token)
     
     # Generate CSRF token

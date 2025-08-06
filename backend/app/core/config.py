@@ -25,5 +25,7 @@ class Settings:
     CSRF_COOKIE_NAME: str = "csrf_token"
     CSRF_HEADER_NAME: str = "X-CSRF-Token"
     SECURE_COOKIES: bool = os.getenv("ENVIRONMENT", "development") == "production"
-    COOKIE_SAMESITE: str = "lax"  # or "strict" for more security, "none" for cross-sit
+    COOKIE_SAMESITE: str = "lax"  
+    BACKEND_URL: str = os.getenv("BACKEND_URL")
+    FRONTEND_URL: str = os.getenv("FRONTEND_URL")
 settings = Settings()

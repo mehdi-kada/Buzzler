@@ -23,7 +23,7 @@ class GoogleProvider(OAuthProvider):
                     "grant_type": "authorization_code",
                 },
             )
-
+            
             token_data = token_response.json()
             if "error" in token_data:
                 raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"OAuth error: {token_data.get('error_description')}")

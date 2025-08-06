@@ -76,8 +76,26 @@ async def send_verification_email(email:str, token:str):
     message["From"] = Settings.SENDER_EMAIL
     message["To"] = email
     message["Subject"] = "Verify Your Buzzler Account"
-    verification_url = f"http://localhost:3000/auth//verify-account?token={token}"
-    message.set_content(f"Please verify your email by clicking this link : {verification_url}")
+    verification_url = f"{Settings.BACKEND_URL}/auth/verify-account?token={token}"
+    
+    # Set plain text content
+    plain_text_content = f"Please verify your email by clicking this link: {verification_url}"
+    message.set_content(plain_text_content)
+
+    # Set HTML content
+    html_content = f"""
+    <html>
+        <body>
+            <p>Hello,</p>
+            <p>Thank you for registering with Buzzler. Please verify your email by clicking the link below:</p>
+            <p><a href="{verification_url}">Verify Your Account</a></p>
+            <p>If you cannot click the link, please copy and paste this URL into your browser:</p>
+            <p>{verification_url}</p>
+            <p>Thanks,<br>The Buzzler Team</p>
+        </body>
+    </html>
+    """
+    message.add_alternative(html_content, subtype='html')
 
     await aiosmtplib.send(
         message,
@@ -85,7 +103,7 @@ async def send_verification_email(email:str, token:str):
         port=Settings.SMTP_PORT,
         username=Settings.SMTP_USERNAME,
         password=Settings.SMTP_PASSWORD,
-        use_tls=True,
+        use_tls=False,
     )
 
 async def send_password_verification_email(email:str, token:str):
@@ -93,8 +111,27 @@ async def send_password_verification_email(email:str, token:str):
     message["From"] = Settings.SENDER_EMAIL
     message["To"] = email
     message["Subject"] = "Reset your Buzzler account password"
-    verification_url = f"http://localhost:3000/auth/password-reset?token={token}"
-    message.set_content(f"You can reset your password by clicking on this link: {verification_url}")
+    verification_url = f"{Settings.BACKEND_URL}/auth/password-reset?token={token}"
+
+    # Set plain text content
+    plain_text_content = f"You can reset your password by clicking on this link: {verification_url}"
+    message.set_content(plain_text_content)
+
+    # Set HTML content
+    html_content = f"""
+    <html>
+        <body>
+            <p>Hello,</p>
+            <p>You requested a password reset for your Buzzler account. Please click the link below to proceed:</p>
+            <p><a href="{verification_url}">Reset Your Password</a></p>
+            <p>If you cannot click the link, please copy and paste this URL into your browser:</p>
+            <p>{verification_url}</p>
+            <p>If you did not request this, please ignore this email.</p>
+            <p>Thanks,<br>The Buzzler Team</p>
+        </body>
+    </html>
+    """
+    message.add_alternative(html_content, subtype='html')
 
     await aiosmtplib.send(
         message,
@@ -102,7 +139,7 @@ async def send_password_verification_email(email:str, token:str):
         port=Settings.SMTP_PORT,
         username=Settings.SMTP_USERNAME,
         password=Settings.SMTP_PASSWORD,
-        use_tls=True,
+        use_tls=False,
     )
 
 async def issue_tokens_and_set_cookie(user, response: Response, db) -> str:
