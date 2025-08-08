@@ -11,7 +11,6 @@ const getCsrfTokenFromCookie = (): string | null => {
   return match ? match[1] : null;
 };
 
-
 api.interceptors.request.use(
   async (config) => {
     const { accessToken } = useAuthStore.getState();
@@ -23,10 +22,6 @@ api.interceptors.request.use(
       config.method &&
       !["get", "head", "options"].includes(config.method.toLowerCase())
     ) {
-      if (config.url === "/auth/refresh") {
-        return config;
-      }
-
       let csrfToken = getCsrfTokenFromCookie();
 
       if (!csrfToken) {
@@ -65,7 +60,7 @@ api.interceptors.response.use(
     ) {
       // Clear invalid CSRF token and retry
       document.cookie =
-        "csrf_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=localhost";
+        "csrf_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/";
       if (!originalRequest._csrf_retry) {
         originalRequest._csrf_retry = true;
         return api(originalRequest);
@@ -83,7 +78,7 @@ api.interceptors.response.use(
       } catch (refreshError) {
         console.log("Refresh token failed, logging out user");
         useAuthStore.getState().logout();
-        
+
         if (!window.location.pathname.includes("/auth/")) {
           window.location.href = "/auth/login";
         }

@@ -1,19 +1,16 @@
-from fastapi import Depends, FastAPI, HTTPException
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy.ext.asyncio import AsyncSession
-from app.core.auth.endpoints import router as auth_router
-from app.api.users.endpoints import router as users_router
-from app.core.security.csrf_middleware import CSRFMiddleware
-
+from app.core.auth.auth_endpoints import router as auth_router
+from app.api.users.user_endpoints import router as users_router
+from app.core.security.headers_middleware import SecurityHeadersMiddleware
 
 
 app = FastAPI()
 
+# Security headers middleware (safe in dev and prod)
+app.add_middleware(SecurityHeadersMiddleware)
 
-#app.add_middleware(CSRFMiddleware) 
-
-app.add_middleware(CORSMiddleware)
-
+# CORS (dev origin configured here)
 origins = ["http://localhost:3000"]
 
 app.add_middleware(

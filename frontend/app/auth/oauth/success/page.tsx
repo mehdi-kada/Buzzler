@@ -17,7 +17,7 @@ export default function OAuthSuccessPage() {
     if (token && userParam) {
       const setupSession = async () => {
         try {
-          // Parse user data from URL parameter
+          // parse user data from URL parameter
           const userSearchParams = new URLSearchParams(userParam);
           const userData = {
             email: userSearchParams.get("email") || "",

@@ -71,6 +71,13 @@ export function LoginForm({
         },
       });
 
+      // Fetch CSRF token so future cookie-auth actions pass double-submit
+      try {
+        await api.post("/auth/csrf-token");
+      } catch (e) {
+        console.warn("Failed to prefetch CSRF token", e);
+      }
+
       const { access_token } = response.data;
       // Use the email from the form and create a basic user object
       const user = { email, first_name: email.split("@")[0] };

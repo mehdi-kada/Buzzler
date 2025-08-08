@@ -1,5 +1,5 @@
 # Depenedcry to get user (verify them )
-from datetime import datetime,timedelta
+from datetime import datetime, timedelta
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from fastapi.responses import RedirectResponse
@@ -121,6 +121,10 @@ async def login(response: Response ,user_form: OAuth2PasswordRequestForm = Depen
     
     access_token = await issue_tokens_and_set_cookie(user, response, db)
 
+    # Also generate a CSRF token and set cookie (double-submit pattern)
+    csrf_token = csrf_protection.generate_csrf_token()
+    csrf_protection.set_csrf_cookie(response, csrf_token)
+
     return TokenResponse(access_token=access_token, token_type="bearer")
 
 @router.post("/refresh", response_model=TokenResponse)
@@ -128,6 +132,10 @@ async def refresh_token(request:Request,response: Response, db : AsyncSession = 
     """
         refresh the access token using the refresh token from cookie
     """
+    # Enforce CSRF for cookie-auth action
+    if not csrf_protection.verify_csrf_protection(request):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="CSRF validation failed")
+
     refresh_token= request.cookies.get("refresh_token")
     if not refresh_token: 
         raise HTTPException(
@@ -172,7 +180,10 @@ async def refresh_token(request:Request,response: Response, db : AsyncSession = 
         )
 
 @router.post("/logout")
-async def log_out(response: Response, db: AsyncSession= Depends(get_db), user: User = Depends(get_current_user)):
+async def log_out(request: Request, response: Response, db: AsyncSession= Depends(get_db), user: User = Depends(get_current_user)):
+    # CSRF verify for state-changing action
+    if not csrf_protection.verify_csrf_protection(request):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="CSRF validation failed")
     user.refresh_token = None
     await db.commit()
     clear_refresh_cookie(response)
@@ -184,7 +195,7 @@ async def log_out(response: Response, db: AsyncSession= Depends(get_db), user: U
 @router.get("/verify-account")
 async def verify_email(token: str, db: AsyncSession = Depends(get_db)):
     try : 
-        payload = jwt.decode(token, Settings.SECRET_KEY, Settings.ALGORITHM)
+        payload = jwt.decode(token, Settings.SECRET_KEY, algorithms=[Settings.ALGORITHM])
         if payload.get("type") != "verification" : 
             raise ValueError("Invalid token type")
         
@@ -211,13 +222,18 @@ async def password_reset_request (data: EmailSchema, db: AsyncSession = Depends(
     result = await db.execute(select(User).where(User.email == data.email))
     user = result.scalars().first()
     if user:
-        token = generate_verification_token()
-        hashed_token = hash_token(token)
-        user.password_reset_token = hashed_token
+        # Create a password reset token (JWT) that includes email and type
+        reset_claims = {
+            "sub": user.email,
+            "type": "password_reset",
+            "exp": datetime.utcnow() + timedelta(hours=1),
+        }
+        raw_token = jwt.encode(reset_claims, Settings.SECRET_KEY, algorithm=Settings.ALGORITHM)
+        user.password_reset_token = hash_token(raw_token)
         user.password_reset_expires_at = datetime.utcnow() + timedelta(hours=1)
         await db.commit()
 
-        await send_password_verification_email(user.email, token)
+        await send_password_verification_email(user.email, raw_token)
     
     return{
         "message": "If an account with that email exists, a password reset link has been sent."
@@ -225,10 +241,23 @@ async def password_reset_request (data: EmailSchema, db: AsyncSession = Depends(
 
 @router.post("/password-reset")
 async def password_reset(data: PasswordReset, db: AsyncSession = Depends(get_db)):
-    hashed_token = hash_token(data.token)
-    result = await db.execute(select(User).where(User.password_reset_token == hashed_token))
+    # Decode token to determine target user
+    try:
+        payload = jwt.decode(data.token, Settings.SECRET_KEY, algorithms=[Settings.ALGORITHM])
+        if payload.get("type") != "password_reset":
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid reset token")
+        email = payload.get("sub")
+        if not email:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid reset token")
+    except JWTError:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid or expired reset token")
+
+    result = await db.execute(select(User).where(User.email == email))
     user = result.scalars().first()
-    if not user or user.password_reset_expires_at < datetime.utcnow():
+    if not user or not user.password_reset_token or not user.password_reset_expires_at or user.password_reset_expires_at < datetime.utcnow():
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid or expired reset token")
+    # Verify the provided token against stored bcrypt hash
+    if not verify_hash_token(data.token, user.password_reset_token):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid or expired reset token")
 
     user.password_hashed = hash_password(data.password)
@@ -258,7 +287,7 @@ async def oauth_callback(
     db: AsyncSession = Depends(get_db),
     response: Response = None,
 ):
-    """Handle OAuth callback and redirect user to frontend."""
+    """handle OAuth callback and redirect user to frontend."""
     try:
         oauth_provider = get_provider(provider)
         # exchange the code for an access token
@@ -300,11 +329,11 @@ async def oauth_callback(
                 await db.commit()
                 await db.refresh(user)
 
-        # Create access token but not the refresh token yet
-        # Refresh token will be set by the setup-session endpoint
+        # create access token but not the refresh token yet
+        # refresh token will be set by the setup-session endpoint
         access_token = create_access_token(data={"sub": user.email})
         
-        # Redirect to frontend with success
+        # redirect to frontend with success
         frontend_url = "http://localhost:3000/auth/oauth/success"
         redirect_url = f"{frontend_url}?token={access_token}&user={urlencode({'email': user.email, 'first_name': user.first_name})}"
         

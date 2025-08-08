@@ -1,6 +1,16 @@
 'use client';
 
+import api from '@/lib/axios';
 import React, { useState, FormEvent } from 'react';
+
+const getGoogleUrl = async()=>{
+  try {
+    const response = await api.get("/auth/google/login")
+    return response.data.redirect_url
+  } catch (error) {
+    console.error("error while fetching Oauth url")
+  }
+}
 
 interface LoginFormData {
   email: string;
@@ -20,14 +30,14 @@ interface SignupFormData {
 export const LoginPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'login' | 'signup'>('login');
   
-  // Login form state
+
   const [loginForm, setLoginForm] = useState<LoginFormData>({
     email: '',
     password: '',
     rememberMe: false
   });
   
-  // Signup form state
+
   const [signupForm, setSignupForm] = useState<SignupFormData>({
     firstName: '',
     lastName: '',
@@ -39,8 +49,8 @@ export const LoginPage: React.FC = () => {
 
   const handleLoginSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    // Handle login logic here
-    console.log('Login form submitted:', loginForm);
+    
+
   };
 
   const handleSignupSubmit = (e: FormEvent<HTMLFormElement>) => {

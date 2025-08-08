@@ -40,11 +40,9 @@ export const useAuthStore = create<AuthState>()(
           user: null,
           isLoading: false,
         });
-        // Clear cookies
+        // Server endpoint will clear HttpOnly cookies; client only clears non-HttpOnly
         document.cookie =
-          "refresh_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=localhost";
-        document.cookie =
-          "csrf_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=localhost";
+          "csrf_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/";
       },
 
       setAccessToken: (token) => {
@@ -65,9 +63,13 @@ export const useAuthStore = create<AuthState>()(
         // If we think we're authenticated but have no access token, try to refresh
         if (isAuthenticated && !accessToken) {
           try {
+            // Include CSRF header from cookie if present
+            const match = document.cookie.match(/csrf_token=([^;]+)/);
+            const csrf = match ? match[1] : undefined;
             const response = await fetch("http://localhost:8000/auth/refresh", {
               method: "POST",
               credentials: "include",
+              headers: csrf ? { "X-CSRF-Token": csrf } : undefined,
             });
 
             if (response.ok) {

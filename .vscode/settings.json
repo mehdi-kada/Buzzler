@@ -1,3 +1,4 @@
 {
-  "python.analysis.addHoverSummaries": false
+  "python.analysis.addHoverSummaries": false,
+  "python.languageServer": "None"
 }

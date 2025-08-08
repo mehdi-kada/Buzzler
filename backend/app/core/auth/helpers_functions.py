@@ -40,7 +40,7 @@ def verify_token(token: str) -> dict:
     except JWTError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid TOken",
+            detail="Invalid token",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
@@ -49,7 +49,7 @@ def generate_verification_token(email:str) -> str:
     data = {"sub":email, "type":"verification"}
     expire = datetime.utcnow() + timedelta(hours=24)
     data.update({"exp": expire})
-    return jwt.encode(data, Settings.SECRET_KEY, Settings.ALGORITHM)
+    return jwt.encode(data, Settings.SECRET_KEY, algorithm=Settings.ALGORITHM)
 
 def set_refresh_token_cookie(response: Response, refresh_token:str) :
     response.set_cookie(

@@ -1,4 +1,5 @@
 /* Buzzler Custom Styles - Centralized CSS File */
+
 /* Google Fonts Import */
 @import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap");
 
@@ -59,6 +60,11 @@
     box-shadow: 0 8px 25px rgba(220, 38, 103, 0.4);
   }
 
+  .btn-primary:focus-visible {
+    outline: 2px solid rgba(220, 38, 103, 0.5);
+    outline-offset: 2px;
+  }
+
   .btn-secondary {
     @apply border border-white/20 backdrop-blur-sm transition-all duration-300 ease-in-out font-medium text-white rounded-lg;
     backdrop-filter: blur(10px);
@@ -67,6 +73,11 @@
   .btn-secondary:hover {
     @apply border-pink-600;
     background: rgba(220, 38, 103, 0.1);
+  }
+
+  .btn-secondary:focus-visible {
+    outline: 2px solid rgba(220, 38, 103, 0.5);
+    outline-offset: 2px;
   }
 
   .btn-danger {
@@ -178,30 +189,33 @@
     @apply scale-105 -translate-y-1;
   }
 
-  /* Forms */
-  .form-input {
-    @apply transition-all duration-300 ease-in-out text-white placeholder-gray-400;
-    background: rgba(255, 255, 255, 0.05);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-  }
+  /* Forms - Updated Section */
+.form-input {
+  @apply transition-all duration-300 ease-in-out text-white placeholder-gray-400;
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
 
-  .form-input:focus {
-    @apply border-pink-600 outline-none;
-    background: rgba(220, 38, 103, 0.05);
-  }
+.form-input:focus {
+  @apply border-pink-600 outline-none ring-0;
+  background: rgba(220, 38, 103, 0.05);
+  box-shadow: 0 0 0 1px rgba(220, 38, 103, 0.5);
+}
 
-  .search-input {
-    @apply transition-all duration-300 ease-in-out text-white placeholder-gray-400;
-    background: rgba(255, 255, 255, 0.05);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-  }
+.search-input {
+  @apply transition-all duration-300 ease-in-out text-white placeholder-gray-400;
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
 
-  .search-input:focus {
-    @apply border-pink-600 outline-none;
-    background: rgba(220, 38, 103, 0.05);
-  }
+.search-input:focus {
+  @apply border-pink-600 outline-none ring-0;
+  background: rgba(220, 38, 103, 0.05);
+  box-shadow: 0 0 0 1px rgba(220, 38, 103, 0.5);
+}
+
 
   /* Upload Areas */
   .upload-area {
@@ -389,6 +403,11 @@
     background: rgba(255, 255, 255, 0.1);
   }
 
+  .social-btn:focus-visible {
+    outline: 2px solid rgba(220, 38, 103, 0.5);
+    outline-offset: 2px;
+  }
+
   .tab-button {
     @apply transition-all duration-300 ease-in-out px-6 py-3 rounded-lg font-medium;
   }
@@ -396,6 +415,16 @@
   .tab-button.active {
     background: linear-gradient(135deg, #dc2667, #f97316);
     @apply text-white;
+  }
+
+  .tab-button:not(.active):hover {
+    @apply text-white;
+    background: rgba(255, 255, 255, 0.05);
+  }
+
+  .tab-button:focus-visible {
+    outline: 2px solid rgba(220, 38, 103, 0.5);
+    outline-offset: 2px;
   }
 
   /* Progress & Timeline */
@@ -528,7 +557,7 @@
     -webkit-line-clamp: 2;
   }
 
-  /* Additional Animation Delays */
+  /* Animation Delays */
   .animate-delay-1 {
     animation-delay: 1s;
   }
@@ -536,167 +565,49 @@
   .animate-delay-2 {
     animation-delay: 2s;
   }
-}
 
-/* Keyframe Animations */
-@keyframes float {
-  0%,
-  100% {
-    transform: translateY(0px);
+  /* Keyframe Animations */
+  @keyframes float {
+    0%,
+    100% {
+      transform: translateY(0px);
+    }
+    50% {
+      transform: translateY(-10px);
+    }
   }
-  50% {
-    transform: translateY(-10px);
-  }
-}
 
-@keyframes glow {
-  from {
-    box-shadow: 0 0 10px rgba(220, 38, 103, 0.3);
+  @keyframes glow {
+    from {
+      box-shadow: 0 0 10px rgba(220, 38, 103, 0.3);
+    }
+    to {
+      box-shadow: 0 0 20px rgba(220, 38, 103, 0.6);
+    }
   }
-  to {
-    box-shadow: 0 0 20px rgba(220, 38, 103, 0.6);
-  }
-}
 
-/* Custom Scrollbar */
-::-webkit-scrollbar {
-  width: 6px;
-}
-
-::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 3px;
-}
-
-::-webkit-scrollbar-thumb {
-  background: linear-gradient(135deg, #dc2667, #f97316);
-  border-radius: 3px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(135deg, #e11d48, #ea580c);
-}
-
-/* Firefox Scrollbar */
-* {
-  scrollbar-width: thin;
-  scrollbar-color: #dc2667 rgba(255, 255, 255, 0.1);
-}
-.gradient-bg {
-  background: radial-gradient(
-    ellipse at center,
-    rgba(139, 69, 19, 0.3) 0%,
-    rgba(0, 0, 0, 1) 70%
-  );
-}
-.glow-effect {
-  text-shadow: 0 0 20px rgba(220, 38, 127, 0.3);
-}
-.btn-primary {
-  background: linear-gradient(135deg, #dc2667, #f97316);
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 15px rgba(220, 38, 103, 0.3);
-}
-.btn-primary:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(220, 38, 103, 0.4);
-}
-.btn-secondary {
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  backdrop-filter: blur(10px);
-  transition: all 0.3s ease;
-}
-.btn-secondary:hover {
-  border-color: #dc2667;
-  background: rgba(220, 38, 103, 0.1);
-}
-.auth-card {
-  background: rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-}
-.form-input {
-  background: rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  transition: all 0.3s ease;
-}
-.form-input:focus {
-  border-color: #dc2667;
-  background: rgba(220, 38, 103, 0.05);
-  outline: none;
-}
-.social-btn {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(10px);
-  transition: all 0.3s ease;
-}
-.social-btn:hover {
-  border-color: rgba(255, 255, 255, 0.3);
-  background: rgba(255, 255, 255, 0.1);
-}
-.tab-button {
-  transition: all 0.3s ease;
-  padding: 0.75rem 1.5rem;
-  border-radius: 0.5rem;
-}
-.tab-button.active {
-  background: linear-gradient(135deg, #dc2667, #f97316);
-  color: white;
-}
-.divider {
-  background: linear-gradient(
-    90deg,
-    transparent,
-    rgba(255, 255, 255, 0.2),
-    transparent
-  );
-  height: 1px;
-}
-.animate-float {
-  animation: float 6s ease-in-out infinite;
-}
-@keyframes float {
-  0%,
-  100% {
-    transform: translateY(0px);
+  /* Custom Scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
   }
-  50% {
-    transform: translateY(-10px);
-  }
-}
-/* Add these additional classes to your globals.css */
 
-@layer utilities {
-  /* Animation delay utilities for background elements */
-  .animate-delay-1 {
-    animation-delay: 1s;
+  ::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
   }
-  
-  .animate-delay-2 {
-    animation-delay: 2s;
-  }
-  
-  /* Focus styles for better accessibility */
-  .form-input:focus-visible {
-    outline: 2px solid rgba(220, 38, 103, 0.5);
-    outline-offset: 2px;
-  }
-  
-  .btn-primary:focus-visible,
-  .btn-secondary:focus-visible,
-  .social-btn:focus-visible,
-  .tab-button:focus-visible {
-    outline: 2px solid rgba(220, 38, 103, 0.5);
-    outline-offset: 2px;
-  }
-}
 
-/* Enhanced tab button states */
-@layer components {
-  .tab-button:not(.active):hover {
-    @apply text-white;
-    background: rgba(255, 255, 255, 0.05);
+  ::-webkit-scrollbar-thumb {
+    background: linear-gradient(135deg, #dc2667, #f97316);
+    border-radius: 3px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(135deg, #e11d48, #ea580c);
+  }
+
+  /* Firefox Scrollbar */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: #dc2667 rgba(255, 255, 255, 0.1);
   }
 }
