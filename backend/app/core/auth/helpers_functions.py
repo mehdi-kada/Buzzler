@@ -44,7 +44,6 @@ def verify_token(token: str) -> dict:
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-# this a token for email verification
 def generate_verification_token(email:str) -> str:
     data = {"sub":email, "type":"verification"}
     expire = datetime.utcnow() + timedelta(hours=24)
@@ -81,11 +80,9 @@ async def send_verification_email(email:str, token:str):
     message["Subject"] = "Verify Your Buzzler Account"
     verification_url = f"{Settings.BACKEND_URL}/auth/verify-account?token={token}"
     
-    # Set plain text content
     plain_text_content = f"Please verify your email by clicking this link: {verification_url}"
     message.set_content(plain_text_content)
 
-    # Set HTML content
     html_content = f"""
     <html>
         <body>
@@ -116,11 +113,9 @@ async def send_password_verification_email(email:str, token:str):
     message["Subject"] = "Reset your Buzzler account password"
     verification_url = f"{Settings.BACKEND_URL}/auth/password-reset?token={token}"
 
-    # Set plain text content
     plain_text_content = f"You can reset your password by clicking on this link: {verification_url}"
     message.set_content(plain_text_content)
 
-    # Set HTML content
     html_content = f"""
     <html>
         <body>
@@ -146,7 +141,7 @@ async def send_password_verification_email(email:str, token:str):
     )
 
 async def issue_tokens_and_set_cookie(user, response: Response, db) -> str:
-    """Creates tokens, stores the refresh token hash, and sets the cookie."""
+    """creates tokens, stores the refresh token hash, and sets the cookie."""
     access_token = create_access_token(data={"sub": user.email})
     refresh_token = create_refresh_token(data={"sub": user.email})
     

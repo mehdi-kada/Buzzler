@@ -37,7 +37,7 @@ export function LoginForm({
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // Check for OAuth errors in URL parameters
+ // the auth error from Oauth will be returned in the url
   useEffect(() => {
     const urlError = searchParams.get("error");
     if (urlError) {
@@ -71,7 +71,6 @@ export function LoginForm({
         },
       });
 
-      // Fetch CSRF token so future cookie-auth actions pass double-submit
       try {
         await api.post("/auth/csrf-token");
       } catch (e) {
@@ -79,7 +78,6 @@ export function LoginForm({
       }
 
       const { access_token } = response.data;
-      // Use the email from the form and create a basic user object
       const user = { email, first_name: email.split("@")[0] };
       login(access_token, user);
       router.push("/dashboard"); // Redirect to protected dashboard

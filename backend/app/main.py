@@ -7,10 +7,8 @@ from app.core.security.headers_middleware import SecurityHeadersMiddleware
 
 app = FastAPI()
 
-# Security headers middleware (safe in dev and prod)
 app.add_middleware(SecurityHeadersMiddleware)
 
-# CORS (dev origin configured here)
 origins = ["http://localhost:3000"]
 
 app.add_middleware(

@@ -11,30 +11,26 @@ class CSRFMiddleware(BaseHTTPMiddleware):
             "/docs",
             "/redoc", 
             "/openapi.json",
-            "/auth/oauth/callback",  # OAuth callbacks can't include CSRF tokens
-            "/auth/csrf-token",      # Allow getting CSRF token without validation
-            "/auth/refresh",         # Refresh endpoint uses httponly cookie, not CSRF
-            "/auth/setup-session",   # Session setup after OAuth login
-            "/health",               # Health check endpoints
+            "/auth/oauth/callback",  
+            "/auth/csrf-token",      
+            "/auth/refresh",         
+            "/auth/setup-session",  
+            "/health",               
         }
-        
-        # Also exempt patterns
+
         self.exempt_patterns = [
-            "/auth/oauth/",  # All OAuth related endpoints
+            "/auth/oauth/",  
         ]
 
     async def dispatch(self, request: Request, call_next):
-        # Skip CSRF for safe methods
         if request.method in self.safe_methods: 
             response = await call_next(request)
             return response
-        
-        # Skip CSRF for exempt paths
+
         if any(request.url.path.startswith(path) for path in self.exempt_paths):
             response = await call_next(request)
             return response
-        
-        # Verify CSRF token for ALL state-changing requests
+
         if not csrf_protection.verify_csrf_protection(request):
             return JSONResponse(
                 status_code=status.HTTP_403_FORBIDDEN,

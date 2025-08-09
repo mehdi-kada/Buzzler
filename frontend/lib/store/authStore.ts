@@ -40,7 +40,7 @@ export const useAuthStore = create<AuthState>()(
           user: null,
           isLoading: false,
         });
-        // Server endpoint will clear HttpOnly cookies; client only clears non-HttpOnly
+        // server cleans http-only cookie while the clinet clean non http-only 
         document.cookie =
           "csrf_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/";
       },
@@ -60,10 +60,8 @@ export const useAuthStore = create<AuthState>()(
       checkAuth: async () => {
         const { isAuthenticated, accessToken } = get();
 
-        // If we think we're authenticated but have no access token, try to refresh
         if (isAuthenticated && !accessToken) {
           try {
-            // Include CSRF header from cookie if present
             const match = document.cookie.match(/csrf_token=([^;]+)/);
             const csrf = match ? match[1] : undefined;
             const response = await fetch("http://localhost:8000/auth/refresh", {
@@ -85,13 +83,10 @@ export const useAuthStore = create<AuthState>()(
           return;
         }
 
-        // If we have both isAuthenticated and accessToken, we re good
         if (isAuthenticated && accessToken) {
           set({ isLoading: false });
           return;
         }
-
-        // Otherwise, we re not authenticated
         set({
           isAuthenticated: false,
           accessToken: null,
@@ -105,11 +100,9 @@ export const useAuthStore = create<AuthState>()(
       partialize: (state) => ({
         user: state.user,
         isAuthenticated: state.isAuthenticated,
-        // Don't persist accessToken for security - it will be refreshed
       }),
       onRehydrateStorage: () => (state) => {
         state?.setHydrated(true);
-        // Check auth status after rehydration
         state?.checkAuth();
       },
     }

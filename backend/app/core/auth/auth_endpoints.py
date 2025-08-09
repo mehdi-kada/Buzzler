@@ -121,7 +121,7 @@ async def login(response: Response ,user_form: OAuth2PasswordRequestForm = Depen
     
     access_token = await issue_tokens_and_set_cookie(user, response, db)
 
-    # Also generate a CSRF token and set cookie (double-submit pattern)
+    # also generate a CSRF token and set cookie (double-submit pattern)
     csrf_token = csrf_protection.generate_csrf_token()
     csrf_protection.set_csrf_cookie(response, csrf_token)
 
@@ -132,7 +132,7 @@ async def refresh_token(request:Request,response: Response, db : AsyncSession = 
     """
         refresh the access token using the refresh token from cookie
     """
-    # Enforce CSRF for cookie-auth action
+    # enforce CSRF for cookie auth action
     if not csrf_protection.verify_csrf_protection(request):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="CSRF validation failed")
 
@@ -205,7 +205,6 @@ async def verify_email(token: str, db: AsyncSession = Depends(get_db)):
     except JWTError :
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid or expired verification token")
     
-    # Get all users with verification tokens and check against each one
     result = await db.execute(select(User).where(User.email == email))
     user = result.scalars().first()
     
@@ -347,8 +346,7 @@ async def oauth_callback(
 @router.post("/setup-session")
 async def setup_session(response: Response, db: AsyncSession = Depends(get_db), user: User = Depends(get_current_user)):
     """
-    Setup session with refresh token cookie after OAuth login.
-    This endpoint is called by the frontend after successful OAuth.
+    setup session with refresh token cookie after OAuth login.
     """
 
     refresh_token = create_refresh_token(data={"sub": user.email})
@@ -358,7 +356,6 @@ async def setup_session(response: Response, db: AsyncSession = Depends(get_db), 
     
     set_refresh_token_cookie(response, refresh_token)
     
-    # Generate CSRF token
     csrf_token = csrf_protection.generate_csrf_token()
     csrf_protection.set_csrf_cookie(response, csrf_token)
     

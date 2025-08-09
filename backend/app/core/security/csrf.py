@@ -17,8 +17,6 @@ class CSRFProtection:
         self.token_expire_seconds = Settings.CSRF_TOKEN_EXPIRE_MINUTES * 60
     
     def generate_csrf_token(self) -> str:
-        """Generate a new CSRF token"""
-        # Create a token with current timestamp
         token_data = {
             "random": secrets.token_urlsafe(32),
             "timestamp": int(time.time())
