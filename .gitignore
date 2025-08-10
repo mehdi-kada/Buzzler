@@ -92,4 +92,4 @@ frontend/next-env.d.ts
 frontend/pnpm-lock.yaml
 backend/app/__pycache__/main.cpython-311.pyc
 backend/app/__pycache__/main.cpython-311.pyc
-frontend/Design
+frontend/design

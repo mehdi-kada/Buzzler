@@ -79,12 +79,6 @@ const LoginPage: React.FC = () => {
       formData.append("username", email);
       formData.append("password", password);
 
-      try {
-        await api.get("/auth/csrf-token");
-      } catch (e) {
-        console.warn("Failed to prefetch CSRF token", e);
-      }
-
       const response = await api.post("/auth/login", formData, {
         headers: {
           "Content-Type": "application/x-www-form-urlencoded",

@@ -10,7 +10,6 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const router = useRouter();
 
   useEffect(() => {
-    // Only check auth after hydration is complete
     if (isHydrated && !isLoading) {
       if (!isAuthenticated || !user) {
         router.push("/auth/login");
@@ -18,7 +17,6 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
     }
   }, [isAuthenticated, user, isLoading, isHydrated, router]);
 
-  // Show loading while hydrating or checking auth
   if (!isHydrated || isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -30,7 +28,6 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
     );
   }
 
-  // Don't render anything if not authenticated
   if (!isAuthenticated || !user) {
     return (
       <div className="flex items-center justify-center min-h-screen">
