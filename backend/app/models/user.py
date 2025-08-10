@@ -12,7 +12,7 @@ class User(Base):
 
     id : Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
 
-    # Auth related fields
+    # auth related fields
     email: Mapped[str] = mapped_column(String(255), nullable=False, unique=True, index=True)
     password_hashed : Mapped[Optional[str]] = mapped_column(String(255), nullable=True, index=True)  # null for auth users
     auth_provider : Mapped[AuthProviders] = mapped_column(Enum(AuthProviders), nullable=False, default=AuthProviders.EMAIL)

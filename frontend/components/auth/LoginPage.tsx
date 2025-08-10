@@ -1,27 +1,53 @@
 "use client";
 
-import React, { useState, FormEvent } from "react";
+import React, { useState, FormEvent, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { useAuthStore } from "@/lib/store/authStore";
+import api from "@/lib/axios";
+import { useSearchParams, useRouter } from "next/navigation";
+import { LoginFormData, SignupFormData } from "@/types/types_auth";
 
-interface LoginFormData {
-  email: string;
-  password: string;
-  rememberMe: boolean;
-}
+const loginWithGoogle = async () => {
+  try {
+    const result = await api.get("/auth/google/login");
+    return result.data.redirect_url;
+  } catch (e) {
+    console.warn("failed to fetch google url");
+  }
+};
 
-interface SignupFormData {
-  firstName: string;
-  lastName: string;
-  email: string;
-  password: string;
-  confirmPassword: string;
-  agreeToTerms: boolean;
-}
+
 
 const LoginPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<"login" | "signup">("login");
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(false); // local submit/loading
+  const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const searchParams = useSearchParams();
+  const oauthError = searchParams.get("error");
+  // Use separate primitive selectors to avoid recreating object snapshots each render
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const isHydrated = useAuthStore((s) => s.isHydrated);
+  const authChecking = useAuthStore((s) => s.isLoading);
+  const login = useAuthStore((s) => s.login);
+  const router = useRouter();
+
+  useEffect(() => {
+    if (oauthError) {
+      setError(
+        oauthError === "oauth_error"
+          ? "Google login failed. Please try again."
+          : "An error occurred during login."
+      );
+    }
+  }, [oauthError]);
+
+  // useEffect(() => {
+  //   if (isHydrated && !authChecking && isAuthenticated) {
+  //     router.replace("/dashboard");
+  //   }
+  // }, [isHydrated, authChecking, isAuthenticated, router]);
 
   // Login form state
   const [loginForm, setLoginForm] = useState<LoginFormData>({
@@ -43,17 +69,49 @@ const LoginPage: React.FC = () => {
   const handleLoginSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoading(true);
+    setError(null);
+    setSuccessMessage(null);
 
     try {
-      // Add your login API call here
-      console.log("Login form submitted:", loginForm);
+      const email = loginForm.email;
+      const password = loginForm.password;
+      const formData = new URLSearchParams();
+      formData.append("username", email);
+      formData.append("password", password);
 
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      try {
+        await api.get("/auth/csrf-token");
+      } catch (e) {
+        console.warn("Failed to prefetch CSRF token", e);
+      }
 
-      // Handle successful login (redirect, etc.)
-    } catch (error) {
-      console.error("Login error:", error);
+      const response = await api.post("/auth/login", formData, {
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+      });
+
+      const { access_token } = response.data;
+      const user = { email, first_name: email.split("@")[0] };
+      login(access_token, user);
+      router.replace("/dashboard");
+    } catch (error: any) {
+      if (error.response) {
+        // Handle specific error cases
+        // Ensure we're always working with a string, not an object
+        let errorMessage = "An unknown error occurred";
+        if (typeof error.response.data.detail === "string") {
+          errorMessage = error.response.data.detail;
+        } else if (typeof error.response.data.detail === "object" && error.response.data.detail.msg) {
+          errorMessage = error.response.data.detail.msg;
+        } else if (typeof error.response.data.detail === "object") {
+          // If it's an object, try to stringify it or use a generic message
+          errorMessage = JSON.stringify(error.response.data.detail);
+        }
+        setError(errorMessage);
+      } else {
+        setError("Network error. Please check your connection and try again.");
+      }
     } finally {
       setIsLoading(false);
     }
@@ -61,51 +119,97 @@ const LoginPage: React.FC = () => {
 
   const handleSignupSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setIsLoading(true);
+    setError(null);
+    setSuccessMessage(null);
 
-    // Validate password match
     if (signupForm.password !== signupForm.confirmPassword) {
-      alert("Passwords do not match");
+      setError("Passwords do not match");
+      setIsLoading(false);
       return;
     }
 
-    setIsLoading(true);
+    if (!signupForm.agreeToTerms) {
+      setError("Please agree to the Terms of Service and Privacy Policy");
+      setIsLoading(false);
+      return;
+    }
 
     try {
-      // Add your signup API call here
-      console.log("Signup form submitted:", signupForm);
+      // Prepare signup data - combine first and last name since backend only expects first_name
+      const signupData = {
+        email: signupForm.email,
+        password: signupForm.password,
+        first_name: `${signupForm.firstName} ${signupForm.lastName}`.trim(),
+      };
 
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      const response = await api.post("/auth/register", signupData);
 
-      // Handle successful signup
-    } catch (error) {
-      console.error("Signup error:", error);
+      setSuccessMessage("Account created successfully! Please check your email for verification.");  
+      setActiveTab("login");
+    } catch (error: any) {
+      if (error.response) {
+      let errorMessage = "An error occurred during signup";
+      const detail = error.response.data.detail;
+      
+      // Handle array of validation errors (Pydantic format)
+      if (Array.isArray(detail)) {
+        errorMessage = detail.map(err => err.msg).join(", ");
+      } 
+      // Handle string error
+      else if (typeof detail === "string") {
+        errorMessage = detail;
+      } 
+      // Handle object with msg property
+      else if (typeof detail === "object" && detail.msg) {
+        errorMessage = detail.msg;
+      } 
+      // Fallback for other object types
+      else if (typeof detail === "object") {
+        errorMessage = JSON.stringify(detail);
+      }
+      
+      setError(errorMessage);
+    } else {
+      setError("Network error. Please check your connection and try again.");
+    }
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleSocialLogin = async (provider: "google" | "github") => {
+  const handleSocialLogin = async (provider: "google") => {
     setIsLoading(true);
-
+    setError(null);
+    setSuccessMessage(null);
     try {
-      // Add your social login logic here
-      console.log(`Login with ${provider}`);
-
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-    } catch (error) {
+      const url = await loginWithGoogle();
+      if (url) {
+        router.push(url);
+      }
+    } catch (error: any) {
       console.error(`${provider} login error:`, error);
+      setError("Failed to initiate Google login. Please try again.");
     } finally {
       setIsLoading(false);
     }
   };
+
+  if (!isHydrated || authChecking) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-black text-white">
+        <div className="flex items-center space-x-2">
+          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white" />
+          <span>Checking session...</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-black text-white overflow-x-hidden min-h-screen">
       {/* Background */}
       <div className="fixed inset-0 gradient-bg"></div>
-
 
       {/* Main Content */}
       <main className="relative z-10 min-h-screen flex items-center justify-center px-6 py-12">
@@ -115,7 +219,12 @@ const LoginPage: React.FC = () => {
             {/* Logo & Welcome */}
             <div className="text-center mb-8">
               <div className="w-16 h-16 bg-gradient-to-r from-pink-600 to-orange-500 rounded-2xl flex items-center justify-center mx-auto mb-4 animate-float">
-                <Image src={"/Logo.png"} height={200} width={200} alt="logo"  />
+                <Image
+                  src={"/Logo.png"}
+                  height={200}
+                  width={200}
+                  alt="logo"
+                />
               </div>
               <h1 className="text-2xl font-bold mb-2">
                 Welcome to{" "}
@@ -149,6 +258,18 @@ const LoginPage: React.FC = () => {
                 Sign Up
               </button>
             </div>
+
+            {/* Messages */}
+            {error && (
+              <div className="auth-error mb-4">
+                {error}
+              </div>
+            )}
+            {successMessage && (
+              <div className="auth-success mb-4">
+                {successMessage}
+              </div>
+            )}
 
             {/* Login Form */}
             {activeTab === "login" && (

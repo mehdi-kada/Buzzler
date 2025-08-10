@@ -26,6 +26,7 @@ frontend/node_modules/
 !.yarn/plugins
 !.yarn/releases
 !.yarn/versions
+.pnpm-store/
 
 # testing
 /coverage
@@ -88,6 +89,7 @@ frontend/.env*
 frontend/.vercel
 frontend/*.tsbuildinfo
 frontend/next-env.d.ts
+frontend/pnpm-lock.yaml
 backend/app/__pycache__/main.cpython-311.pyc
 backend/app/__pycache__/main.cpython-311.pyc
 frontend/Design

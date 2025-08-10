@@ -40,7 +40,7 @@ export const useAuthStore = create<AuthState>()(
           user: null,
           isLoading: false,
         });
-        // server cleans http-only cookie while the clinet clean non http-only 
+        // server cleans http-only cookie while the client clean non http-only 
         document.cookie =
           "csrf_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/";
       },

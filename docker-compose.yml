@@ -37,6 +37,7 @@ services:
     # Mount the local ./frontend folder into /app inside the container
     volumes:
       - ./frontend:/app
+      - /app/node_modules
 
   # Database service using PostgreSQL
   db:
