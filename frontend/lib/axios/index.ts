@@ -2,7 +2,7 @@ import axios from "axios";
 import { useAuthStore } from "../store/authStore";
 
 const api = axios.create({
-  baseURL: "http://localhost:8000",
+  baseURL: process.env.NEXT_PUBLIC_BACKEND_URL,
   withCredentials: true,
 });
 
@@ -28,7 +28,7 @@ api.interceptors.request.use(
       if (!csrfToken) {
         try {
           const response = await axios.post(
-            "http://localhost:8000/auth/csrf-token",
+            `${process.env.NEXT_PUBLIC_BACKEND_URL}/auth/csrf-token`,
             {},
             { withCredentials: true }
           );

@@ -64,7 +64,7 @@ export const useAuthStore = create<AuthState>()(
           try {
             const match = document.cookie.match(/csrf_token=([^;]+)/);
             const csrf = match ? match[1] : undefined;
-            const response = await fetch("http://localhost:8000/auth/refresh", {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/auth/refresh`, {
               method: "POST",
               credentials: "include",
               headers: csrf ? { "X-CSRF-Token": csrf } : undefined,

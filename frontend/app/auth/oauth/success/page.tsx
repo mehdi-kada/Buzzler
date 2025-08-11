@@ -31,7 +31,7 @@ export default function OAuthSuccessPage() {
 
           // Setup session with refresh token and CSRF token
           await axios.post(
-            "http://localhost:8000/auth/setup-session",
+            `${process.env.NEXT_PUBLIC_BACKEND_URL}/auth/setup-session`,
             {},
             {
               headers: {
