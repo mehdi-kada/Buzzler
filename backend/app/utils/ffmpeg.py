@@ -1,16 +1,19 @@
 import asyncio
+import json
 from math import log
 from os import error
 from sys import stderr, stdout
+from typing import Any, Dict
 from venv import logger
 from anyio import Path
 
-from backend.app.config import Settings
-from backend.app.models import video
+from app.config import Settings
+from app.models import video
 
 
 class FFMPEGException(Exception):
     pass
+
 
 async def extract_audio(video_path : Path, audio_path: Path, progress_callback=None ) -> bool:
     
@@ -56,10 +59,101 @@ async def extract_audio(video_path : Path, audio_path: Path, progress_callback=N
             error_msg = stderr.decode() if stderr else "Unknown error"
             raise FFMPEGException(f"FFmpeg process failed with return code {process.returncode}: {error_msg}")
         
-
-        
     except asyncio.TimeoutError:
         raise FFMPEGException("FFmpeg process timed out.")
     except Exception as e:
         logger.error(f"FFmpeg process failed: {e}")
         raise FFMPEGException(f"FFmpeg process failed: {e}")
+
+
+async def get_video_info_async(video_path: Path) -> Dict[str, Any]:
+    """Get video information using ffprobe asynchronously"""
+    if not video_path.exists():
+        raise FFMPEGException(f"Video file {video_path} does not exist.")
+    
+    cmd = [
+        Settings.FFPROBE_PATH,
+        '-v', 'quiet',
+        '-show_format',
+        '-show_streams',
+        str(video_path)
+    ]
+    
+    try:
+        process = await asyncio.create_subprocess_exec(
+            *cmd,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE
+        )
+
+        stdout, stderr = await process.communicate()
+        
+        if process.returncode != 0:
+            error_msg = stderr.decode() if stderr else "Unknown error"
+            raise FFMPEGException(f"FFprobe process failed with return code {process.returncode}: {error_msg}")
+        
+        data = json.loads(stdout.decode())
+        return data
+    except json.JSONDecodeError as e:
+        raise FFMPEGException(f"Failed to parse ffprobe output: {e}")
+    except asyncio.TimeoutError:
+        raise FFMPEGException("FFprobe process timed out.")
+    except Exception as e:
+        logger.error(f"FFprobe process failed: {e}")
+        raise FFMPEGException(f"FFprobe process failed: {e}")
+   
+    
+def _parse_video_info(ffprobe_data: dict) -> Dict[str, Any]:
+    """Parse ffprobe output into structured video information"""
+    
+    video_stream = None
+    audio_stream = None
+    
+    for stream in ffprobe_data.get('streams', []):
+        if stream.get('codec_type') == 'video' and video_stream is None:
+            video_stream = stream
+        elif stream.get('codec_type') == 'audio' and audio_stream is None:
+            audio_stream = stream
+    
+    if not video_stream:
+        raise FFMPEGException("No video stream found in file")
+    
+    duration = None
+    if 'duration' in ffprobe_data.get('format', {}):
+        duration = float(ffprobe_data['format']['duration'])
+    elif 'duration' in video_stream:
+        duration = float(video_stream['duration'])
+    
+    fps = 0.0
+    if 'r_frame_rate' in video_stream:
+        fps_str = video_stream['r_frame_rate']
+        if '/' in fps_str:
+            num, den = fps_str.split('/')
+            if int(den) != 0:
+                fps = round(float(num) / float(den), 2)
+    
+    width = video_stream.get('width', 0)
+    height = video_stream.get('height', 0)
+    
+    return {
+        'duration': duration,
+        'width': width,
+        'height': height,
+        'fps': fps,
+        'video_codec': video_stream.get('codec_name', 'unknown'),
+        'audio_codec': audio_stream.get('codec_name', 'unknown') if audio_stream else None,
+        'bitrate': int(ffprobe_data.get('format', {}).get('bit_rate', 0)),
+        'file_size': int(ffprobe_data.get('format', {}).get('size', 0)),
+        'has_audio': audio_stream is not None
+    }
+
+
+def estimate_audio_extraction_time(video_duration: float, file_size_mb: float) -> float:
+    """Estimate audio extraction time in seconds"""
+    base_time = video_duration * 0.1
+    
+    size_overhead = file_size_mb * 0.02  
+    
+    estimated_time = max(2.0, min(120.0, base_time + size_overhead))
+    
+    return estimated_time
