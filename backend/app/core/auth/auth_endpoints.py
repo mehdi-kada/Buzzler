@@ -240,7 +240,6 @@ async def password_reset_request (data: EmailSchema, db: AsyncSession = Depends(
 
 @router.post("/password-reset")
 async def password_reset(data: PasswordReset, db: AsyncSession = Depends(get_db)):
-    # Decode token to determine target user
     try:
         payload = jwt.decode(data.token, Settings.SECRET_KEY, algorithms=[Settings.ALGORITHM])
         if payload.get("type") != "password_reset":
@@ -255,7 +254,6 @@ async def password_reset(data: PasswordReset, db: AsyncSession = Depends(get_db)
     user = result.scalars().first()
     if not user or not user.password_reset_token or not user.password_reset_expires_at or user.password_reset_expires_at < datetime.utcnow():
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid or expired reset token")
-    # Verify the provided token against stored bcrypt hash
     if not verify_hash_token(data.token, user.password_reset_token):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid or expired reset token")
 
@@ -332,14 +330,12 @@ async def oauth_callback(
         # refresh token will be set by the setup-session endpoint
         access_token = create_access_token(data={"sub": user.email})
         
-        # redirect to frontend with success
         frontend_url = "http://localhost:3000/auth/oauth/success"
         redirect_url = f"{frontend_url}?token={access_token}&user={urlencode({'email': user.email, 'first_name': user.first_name})}"
         
         return RedirectResponse(url=redirect_url, status_code=302)
         
     except Exception as e:
-        # Redirect to frontend with error
         error_url = f"http://localhost:3000/auth/login?error={urlencode({'message': str(e)})}"
         return RedirectResponse(url=error_url, status_code=302)
 

@@ -7,7 +7,6 @@ from .clip import *
 from .content_template import *
 from .file_storage import *
 from .post import *
-from .project import *
 from .social_account import *
 from .user import *
 from .video import *

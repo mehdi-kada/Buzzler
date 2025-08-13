@@ -60,12 +60,6 @@ class VideoStatus(enum.Enum):
     READY = "ready"
     FAILED = "failed"
 
-class ProjectStatus(enum.Enum):
-    DRAFT = "draft"
-    PROCESSING = "processing" 
-    COMPLETED = "completed"
-    FAILED = "failed"
-
 class ActionType(enum.Enum):
     USER_LOGIN = "user_login"
     USER_LOGOUT = "user_logout"

@@ -8,7 +8,6 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from app.models.user import User
-from app.models.project import Project
 from app.models.video import Video
 from app.models.clip import Clip
 from app.models.social_account import SocialAccount

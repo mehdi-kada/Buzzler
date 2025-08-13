@@ -36,7 +36,6 @@ class User(Base):
     created_at : Mapped[DateTime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at : Mapped[DateTime] = mapped_column(DateTime(timezone=True),server_default=func.now(), onupdate=func.now())
 
-    projects : Mapped[list["Project"]] = relationship("Project", back_populates="user")
     social_accounts: Mapped[list["SocialAccount"]] = relationship("SocialAccount", back_populates="user")
     templates: Mapped[list["ContentTemplate"]] = relationship("ContentTemplate", back_populates="user")
 
@@ -48,6 +47,5 @@ class User(Base):
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from app.models.project import Project
     from app.models.social_account import SocialAccount
     from app.models.content_template import ContentTemplate
