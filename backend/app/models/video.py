@@ -43,22 +43,19 @@ class Video(Base):
     fps: Mapped[Optional[float]] = mapped_column(Float)
     video_codec: Mapped[Optional[str]] = mapped_column(String(50))
     audio_codec: Mapped[Optional[str]] = mapped_column(String(50))
-    
-    # Error handling
+
     error_message: Mapped[Optional[str]] = mapped_column(Text)
     retry_count: Mapped[int] = mapped_column(Integer, default=0)
     max_retries: Mapped[int] = mapped_column(Integer, default=3)
     
-    # Timestamps
+
     created_at: Mapped[DateTime] = mapped_column(DateTime, default=func.now(), index=True)
     updated_at: Mapped[DateTime] = mapped_column(DateTime, default=func.now(), onupdate=func.now())
     azure_uploaded_at: Mapped[Optional[DateTime]] = mapped_column(DateTime)
     temp_cleaned_at: Mapped[Optional[DateTime]] = mapped_column(DateTime)
     
-    # Relationship
     clips: Mapped[list["Clip"]] = relationship("Clip", back_populates="video", cascade="all, delete-orphan")
     
-    # Indexes for performance
     __table_args__ = (
         Index('idx_videos_status_created', 'status', 'created_at'),
         Index('idx_videos_temp_cleanup', 'temp_created_at', 'temp_cleanup_scheduled'),
