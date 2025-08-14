@@ -1,12 +1,9 @@
 
 import time
-
 from typing import Optional, Callable
 import logging
 from pathlib import Path
-
 from azure.storage.blob.aio import BlobServiceClient
-
 from backend.app.config import Settings
 
 
@@ -107,9 +104,9 @@ def upload_file_to_azure_sync(local_path: Path, azure_path: str) -> str:
         )
 
         with open(local_path, 'rb') as data:
-            blob_client.upload_blob(data, overwrite=True, timeout=settings.AZURE_UPLOAD_TIMEOUT)
+            blob_client.upload_blob(data, overwrite=True, timeout=Settings.AZURE_UPLOAD_TIMEOUT)
 
-        azure_url = f"https://{blob_service_client.account_name}.blob.core.windows.net/{settings.AZURE_CONTAINER_NAME}/{azure_path}"
+        azure_url = f"https://{blob_service_client.account_name}.blob.core.windows.net/{Settings.AZURE_CONTAINER_NAME}/{azure_path}"
         return azure_url
 
     except Exception as e:

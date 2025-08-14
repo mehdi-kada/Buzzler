@@ -1,5 +1,4 @@
 import asyncio
-import asyncio
 import json
 import logging
 from pathlib import Path
@@ -162,9 +161,6 @@ def _parse_video_info(ffprobe_data: dict) -> Dict[str, Any]:
 def estimate_audio_extraction_time(video_duration: float, file_size_mb: float) -> float:
     """Estimate audio extraction time in seconds"""
     base_time = video_duration * 0.1
-
     size_overhead = file_size_mb * 0.02
-
     estimated_time = max(2.0, min(120.0, base_time + size_overhead))
-
     return estimated_time

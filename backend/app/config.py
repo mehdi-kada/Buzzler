@@ -1,4 +1,3 @@
-from typing_extensions import Optional
 from dotenv import load_dotenv
 import os
 from pathlib import Path
@@ -7,48 +6,47 @@ load_dotenv()
 
 class Settings:
     # Security settings
-    SECRET_KEY: Optional[str] = os.getenv("SECRET_KEY")
-    ALGORITHM: Optional[str] = os.getenv("ALGORITHM")
-    ACCESS_TOKEN_EXPIRE_MINUTES: Optional[int] = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES"))
-    REFRESH_TOKEN_EXPIRE_DAYS: Optional[int] = int(os.getenv("REFRESH_TOKEN_EXPIRE_DAYS"))
+    SECRET_KEY: str = os.getenv("SECRET_KEY")
+    ALGORITHM: str = os.getenv("ALGORITHM")
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES"))
+    REFRESH_TOKEN_EXPIRE_DAYS: int = int(os.getenv("REFRESH_TOKEN_EXPIRE_DAYS"))
     CSRF_SECRET_KEY: str = os.getenv("CSRF_SECRET_KEY", "your-csrf-secret-key-change-in-production")
-    CSRF_TOKEN_EXPIRE_MINUTES: Optional[int] = int(os.getenv("CSRF_TOKEN_EXPIRE_MINUTES", "60"))
+    CSRF_TOKEN_EXPIRE_MINUTES: int = int(os.getenv("CSRF_TOKEN_EXPIRE_MINUTES", "60"))
     CSRF_COOKIE_NAME: str = "csrf_token"
     CSRF_HEADER_NAME: str = "X-CSRF-Token"
 
     # Database settings
-    DATABASE_URL: Optional[str] = os.getenv("DATABASE_URL")
+    DATABASE_URL: str = os.getenv("DATABASE_URL")
 
     # Email settings
-    SMTP_HOST: Optional[str] = os.getenv("SMTP_HOST")
-    SMTP_PORT: Optional[int] = int(os.getenv("SMTP_PORT")) if os.getenv("SMTP_PORT") is not None else None
-    SMTP_USERNAME: Optional[str] = os.getenv("SMTP_USERNAME")
-    SMTP_PASSWORD: Optional[str] = os.getenv("SMTP_PASSWORD")
-    SENDER_EMAIL: Optional[str] = os.getenv("SENDER_EMAIL")
+    SMTP_HOST: str = os.getenv("SMTP_HOST")
+    SMTP_PORT: int = int(os.getenv("SMTP_PORT"))
+    SMTP_USERNAME: str = os.getenv("SMTP_USERNAME")
+    SMTP_PASSWORD: str = os.getenv("SMTP_PASSWORD")
+    SENDER_EMAIL: str = os.getenv("SENDER_EMAIL")
 
     # OAuth settings
-    GOOGLE_CLIENT_ID: Optional[str] = os.getenv("GOOGLE_CLIENT_ID")
-    GOOGLE_CLIENT_SECRET: Optional[str] = os.getenv("GOOGLE_CLIENT_SECRET")
-    X_CLIENT_ID: Optional[str] = os.getenv("X_CLIENT_ID")
-    X_CLIENT_SECRET: Optional[str] = os.getenv("X_CLIENT_SECRET")
-    REDIRECT_URI: Optional[str] = os.getenv("REDIRECT_URI")
+    GOOGLE_CLIENT_ID: str = os.getenv("GOOGLE_CLIENT_ID")
+    GOOGLE_CLIENT_SECRET: str = os.getenv("GOOGLE_CLIENT_SECRET")
+    X_CLIENT_ID: str = os.getenv("X_CLIENT_ID")
+    X_CLIENT_SECRET: str = os.getenv("X_CLIENT_SECRET")
+    REDIRECT_URI: str = os.getenv("REDIRECT_URI")
 
     # Cookie settings
-    COOKIE_DOMAIN: Optional[str] = os.getenv("COOKIE_DOMAIN", None)
+    COOKIE_DOMAIN: str = os.getenv("COOKIE_DOMAIN", None)
     SECURE_COOKIES: bool = os.getenv("ENVIRONMENT", "development") == "production"
     COOKIE_SAMESITE: str = "lax"
 
     # URL settings
-    BACKEND_URL: Optional[str] = os.getenv("BACKEND_URL")
-    FRONTEND_URL: Optional[str] = os.getenv("FRONTEND_URL")
+    BACKEND_URL: str = os.getenv("BACKEND_URL")
+    FRONTEND_URL: str = os.getenv("FRONTEND_URL")
 
     # Verification settings
     VERIFICATION_TOKEN_EXPIRE_HOURS: int = int(os.getenv("VERIFICATION_TOKEN_EXPIRE_HOURS", "24"))
 
     # Redis settings
-    REDIS_URL: Optional[str] = os.getenv('REDIS_URL', 'redis://localhost:6379/0')
+    REDIS_URL: str = os.getenv('REDIS_URL', 'redis://localhost:6379/0')
 
-    # Video processing settings
     # Temporary storage settings
     TEMP_BASE_DIR: Path = Path(os.getenv('TEMP_BASE_DIR', '/tmp/buzzler'))
     MAX_TEMP_STORAGE_GB: float = float(os.getenv('MAX_TEMP_STORAGE_GB', '20'))
@@ -64,9 +62,10 @@ class Settings:
     ]
 
     # Azure storage settings
-    AZURE_STORAGE_CONNECTION_STRING: Optional[str] = os.getenv('AZURE_STORAGE_CONNECTION_STRING', '')
-    AZURE_CONTAINER_NAME: Optional[str] = os.getenv('AZURE_CONTAINER_NAME', 'buzzler-videos')
-    AZURE_UPLOAD_TIMEOUT: Optional[int] = int(os.getenv('AZURE_UPLOAD_TIMEOUT', '300')) if os.getenv('AZURE_UPLOAD_TIMEOUT') is not None else None
+    AZURE_STORAGE_CONNECTION_STRING: str = os.getenv('AZURE_STORAGE_CONNECTION_STRING', '')
+    AZURE_CONTAINER_NAME: str = os.getenv('AZURE_CONTAINER_NAME', 'buzzler-videos')
+    AZURE_UPLOAD_TIMEOUT: int = int(os.getenv('AZURE_UPLOAD_TIMEOUT', '300'))
+    AZURE_STORAGE_ACCOUNT_NAME : str = os.getenv('AZURE_STORAGE_ACCOUNT_NAME', '')
 
     # Audio processing settings
     FFMPEG_PATH: str = os.getenv('FFMPEG_PATH', 'ffmpeg')
