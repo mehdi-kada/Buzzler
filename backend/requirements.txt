@@ -1,27 +1,28 @@
-bcrypt<4.0.0
+# Removed: bcrypt<4.0.0 (let passlib[bcrypt] pull a compatible bcrypt; older pins break on py3.13)
 pydantic
 email-validator
-fastapi==0.104.1
-uvicorn[standard]==0.24.0
-python-multipart==0.0.6
-alembic==1.12.1
+fastapi
+uvicorn[standard]
+python-multipart
+alembic
 requests
-sqlalchemy==2.0.23
+sqlalchemy
 python-dotenv
 sqlalchemy[asyncio]
 asyncpg
 websockets
-python-jose[cryptography]==3.3.0
+python-jose[cryptography]
 passlib[bcrypt]
-python-dotenv
 aiosmtplib
 httpx
 itsdangerous
-celery[redis]==5.3.4
-redis==5.0.1
-psycopg2-binary==2.9.9
-pydantic-settings==2.1.0
-aiofiles==23.2.1
-azure-storage-blob==12.19.0
-azure-identity==1.15.0
-python-magic==0.4.27
+celery[redis]
+redis
+# Use psycopg2-binary for <3.13; use psycopg (v3) binary wheels for >=3.13
+psycopg2-binary; python_version < "3.13"
+psycopg[binary]; python_version >= "3.13"
+pydantic-settings
+aiofiles
+azure-storage-blob
+azure-identity
+python-magic
