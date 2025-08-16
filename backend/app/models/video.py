@@ -1,73 +1,72 @@
-from app.models.enums import VideoStatus
+from __future__ import annotations
+
+from typing import Optional, TYPE_CHECKING
+import enum
+
 from app.db.database import Base
-from typing import Optional
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy import JSON, String, Integer, DateTime, Enum, Text, Boolean, Index, Float, func
+from sqlalchemy import String, Integer, DateTime, Float, Text, Index, func, Enum as SAEnum
+
+
+class VideoStatus(str, enum.Enum):
+    PENDING_UPLOAD = "PENDING_UPLOAD"      # Record created, presigned URL issued
+    UPLOAD_COMPLETED = "UPLOAD_COMPLETED"  # Client confirmed upload to Azure
+    PROCESSING = "PROCESSING"              # Worker started processing
+    COMPLETED = "COMPLETED"                # Processing finished successfully
+    FAILED = "FAILED"                      # An error occurred
 
 
 class Video(Base):
-    """
-    table to store video metadata (not the file itself)
-    """
     __tablename__ = "videos"
-    
+
     # Primary fields
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    project_id: Mapped[int] = mapped_column(Integer, nullable=False, index=True)
     user_id: Mapped[int] = mapped_column(Integer, nullable=False, index=True)
-    
+
     # File information
     original_filename: Mapped[str] = mapped_column(String(255), nullable=False)
     file_size_bytes: Mapped[Optional[int]] = mapped_column(Integer)
     mime_type: Mapped[Optional[str]] = mapped_column(String(100))
     file_extension: Mapped[Optional[str]] = mapped_column(String(10))
-    
+
     # Azure storage
-    azure_file_path: Mapped[Optional[str]] = mapped_column(String(512))  # Path in Azure blob storage
-    azure_url: Mapped[Optional[str]] = mapped_column(Text)  # Full Azure blob URL
-    azure_upload_completed: Mapped[Optional[bool]] = mapped_column(Boolean, default=False)
-    
-    # Temporary storage
-    temp_video_path: Mapped[Optional[str]] = mapped_column(String(512))  # Local temp video path
-    temp_audio_path: Mapped[Optional[str]] = mapped_column(String(512))  # Local temp audio path
-    temp_created_at: Mapped[Optional[DateTime]] = mapped_column(DateTime, default=func.now())
-    temp_cleanup_scheduled: Mapped[Optional[bool]] = mapped_column(Boolean, default=False)
-    
+    azure_file_path: Mapped[Optional[str]] = mapped_column(String(512), unique=True)  # Relative path in Azure container
+    azure_video_url: Mapped[Optional[str]] = mapped_column(Text)                       # Final public/private URL of the video
+    azure_audio_url: Mapped[Optional[str]] = mapped_column(Text)                       # URL for the extracted audio
+
+    # Upload process
+    upload_url: Mapped[Optional[str]] = mapped_column(Text)                      # The pre-signed URL given to the client
+    upload_expires_at: Mapped[Optional[DateTime]] = mapped_column(DateTime)
+
     # Processing status
-    status: Mapped[VideoStatus] = mapped_column(Enum(VideoStatus), default=VideoStatus.UPLOADING, index=True)
-    upload_progress_percent: Mapped[Optional[float]] = mapped_column(Float, default=0.0)
-    
+    status: Mapped[VideoStatus] = mapped_column(SAEnum(VideoStatus), default=VideoStatus.PENDING_UPLOAD, index=True)
+
     # Video metadata (filled during processing)
     duration_seconds: Mapped[Optional[float]] = mapped_column(Float)
     resolution_width: Mapped[Optional[int]] = mapped_column(Integer)
     resolution_height: Mapped[Optional[int]] = mapped_column(Integer)
-    fps: Mapped[Optional[float]] = mapped_column(Float)
-    video_codec: Mapped[Optional[str]] = mapped_column(String(50))
-    audio_codec: Mapped[Optional[str]] = mapped_column(String(50))
 
+    # Error handling
     error_message: Mapped[Optional[str]] = mapped_column(Text)
-    retry_count: Mapped[int] = mapped_column(Integer, default=0)
-    max_retries: Mapped[int] = mapped_column(Integer, default=3)
-    
 
-    created_at: Mapped[DateTime] = mapped_column(DateTime, default=func.now(), index=True)
+    # Timestamps
+    created_at: Mapped[DateTime] = mapped_column(DateTime, default=func.now())
     updated_at: Mapped[DateTime] = mapped_column(DateTime, default=func.now(), onupdate=func.now())
-    azure_uploaded_at: Mapped[Optional[DateTime]] = mapped_column(DateTime)
-    temp_cleaned_at: Mapped[Optional[DateTime]] = mapped_column(DateTime)
-    
+    upload_completed_at: Mapped[Optional[DateTime]] = mapped_column(DateTime)
+    processing_completed_at: Mapped[Optional[DateTime]] = mapped_column(DateTime)
+
+    # Relationships
     clips: Mapped[list["Clip"]] = relationship("Clip", back_populates="video", cascade="all, delete-orphan")
-    
+
     __table_args__ = (
-        Index('idx_videos_status_created', 'status', 'created_at'),
-        Index('idx_videos_temp_cleanup', 'temp_created_at', 'temp_cleanup_scheduled'),
-        Index('idx_videos_user_created', 'user_id', 'created_at'),
+        Index("idx_videos_status_created", "status", "created_at"),
+        Index("idx_videos_project_created", "project_id", "created_at"),
     )
 
+    def __repr__(self) -> str:
+        return f"<Video(id={self.id}, filename='{self.original_filename}', status='{self.status}')>"
 
-from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from app.models.clip import Clip
-
-
-    def __repr__(self):
-        return f"<Video(id={self.id}, filename='{self.original_filename}', status='{self.status}')>"

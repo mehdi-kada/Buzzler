@@ -11,7 +11,7 @@ const getCsrfTokenFromCookie = (): string | null => {
   return match ? match[1] : null;
 };
 
-// request interceptor to handle the CSRF and auth tokend inclusion 
+// request interceptor to handle the CSRF and auth token inclusion 
 api.interceptors.request.use(
   async (config) => {
     const { accessToken } = useAuthStore.getState();
