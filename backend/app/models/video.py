@@ -3,15 +3,15 @@ from typing import Optional, TYPE_CHECKING
 from datetime import datetime
 from app.db.database import Base
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy import String, Integer, DateTime, Float, Text, Index, func, Enum as SAEnum
+from sqlalchemy import String, Integer, DateTime, Float, Text, Index, func, ForeignKey, Enum as SAEnum
 from app.models.enums import VideoSource, VideoStatus
 
 class Video(Base):
     __tablename__ = "videos"
 
     # Primary fields
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
-    user_id: Mapped[int] = mapped_column(Integer, nullable=False, index=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    user_id: Mapped[int] = mapped_column(Integer, ForeignKey('users.id'), nullable=False, index=True)
 
     source : Mapped[VideoSource] = mapped_column(SAEnum(VideoSource), nullable=False)
 
@@ -28,7 +28,7 @@ class Video(Base):
 
     # Upload process
     upload_url: Mapped[Optional[str]] = mapped_column(Text)                      # The pre-signed URL given to the client
-    upload_expires_at: Mapped[Optional[DateTime]] = mapped_column(DateTime)
+    upload_expires_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
 
     # Processing status
     status: Mapped[VideoStatus] = mapped_column(SAEnum(VideoStatus), default=VideoStatus.PENDING_UPLOAD, index=True)
@@ -42,10 +42,10 @@ class Video(Base):
     error_message: Mapped[Optional[str]] = mapped_column(Text)
 
     # Timestamps
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=func.now())
-    updated_at: Mapped[datetime] = mapped_column(DateTime, default=func.now(), onupdate=func.now())
-    upload_completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime)
-    processing_completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    upload_completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    processing_completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
 
     # Relationships
     clips: Mapped[list["Clip"]] = relationship("Clip", back_populates="video", cascade="all, delete-orphan")

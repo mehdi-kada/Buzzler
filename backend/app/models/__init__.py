@@ -1,4 +1,6 @@
 # Import all models to ensure SQLAlchemy registers them
+# Note: table names have been standardized to plural snake_case (e.g. "users", "videos", "clips").
+# Keeping imports unchanged so SQLAlchemy model registry is populated.
 from .enums import *
 from .ai_analytics import *
 from .analytics_data import *
