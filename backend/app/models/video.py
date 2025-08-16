@@ -1,19 +1,14 @@
 from __future__ import annotations
 
 from typing import Optional, TYPE_CHECKING
-import enum
 
 from app.db.database import Base
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy import String, Integer, DateTime, Float, Text, Index, func, Enum as SAEnum
+from app.models.enums import VideoStatus
 
 
-class VideoStatus(str, enum.Enum):
-    PENDING_UPLOAD = "PENDING_UPLOAD"      # Record created, presigned URL issued
-    UPLOAD_COMPLETED = "UPLOAD_COMPLETED"  # Client confirmed upload to Azure
-    PROCESSING = "PROCESSING"              # Worker started processing
-    COMPLETED = "COMPLETED"                # Processing finished successfully
-    FAILED = "FAILED"                      # An error occurred
+
 
 
 class Video(Base):
@@ -21,7 +16,6 @@ class Video(Base):
 
     # Primary fields
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
-    project_id: Mapped[int] = mapped_column(Integer, nullable=False, index=True)
     user_id: Mapped[int] = mapped_column(Integer, nullable=False, index=True)
 
     # File information
@@ -61,7 +55,6 @@ class Video(Base):
 
     __table_args__ = (
         Index("idx_videos_status_created", "status", "created_at"),
-        Index("idx_videos_project_created", "project_id", "created_at"),
     )
 
     def __repr__(self) -> str:

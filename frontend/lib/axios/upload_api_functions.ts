@@ -70,10 +70,8 @@ export const uploadFileToAzure = async (
           // Only update if this is still the current upload
           const currentFileId = useUploadStore.getState().fileId;
           if (currentFileId === fileId) {
-            // Update store
             useUploadStore.getState().setProgress(percentCompleted);
 
-            // Call optional progress callback
             if (onProgress) {
               onProgress(percentCompleted);
             }
@@ -82,7 +80,6 @@ export const uploadFileToAzure = async (
       },
     });
   } catch (error) {
-    // Handle Azure upload errors specifically
     if (error instanceof Error) {
       toast.error(`Upload failed: ${error.message}`);
     } else {
@@ -90,7 +87,7 @@ export const uploadFileToAzure = async (
     }
     throw error;
   } finally {
-    // Only reset if this upload is still the active one
+    // Only reset if this upload is still the active one for handling mulitpe uploads
     const currentFileId = useUploadStore.getState().fileId;
     if (currentFileId === fileId) {
       useUploadStore.getState().reset();
@@ -115,7 +112,6 @@ export const sendUploadInfoToBackend = async (
     toast.success("File uploaded and registered successfully!");
     return response.data;
   } catch (error) {
-    // The error will be caught by the interceptor and a toast will be shown
     throw error;
   }
 };
@@ -129,19 +125,15 @@ export const uploadFileComplete = async (
   onProgress?: (progress: number) => void,
 ) => {
   try {
-    // Mark upload as starting
+    
     useUploadStore.getState().setUploading(true, file.name, fileId);
 
-    // Step 1: Get SAS URL from backend
     const sasUrl = await getAzureSasUrl(file.name, file.size);
 
-    // Step 2: Upload file to Azure
     await uploadFileToAzure(sasUrl, file, fileId, onProgress);
 
-    // Step 3: Extract blob URL from SAS URL (remove query parameters)
     const azureBlobUrl = sasUrl.split("?")[0];
 
-    // Step 4: Notify backend of successful upload
     const result = await sendUploadInfoToBackend(
       file.name,
       file.size,

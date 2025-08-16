@@ -59,6 +59,7 @@ class VideoStatus(enum.Enum):
     ANALYZING = "analyzing"
     READY = "ready"
     FAILED = "failed"
+    PENDING_UPLOAD = "pending_upload"
 
 class ActionType(enum.Enum):
     USER_LOGIN = "user_login"
