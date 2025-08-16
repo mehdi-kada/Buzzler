@@ -127,11 +127,8 @@ export const uploadFileComplete = async (
   try {
     
     useUploadStore.getState().setUploading(true, file.name, fileId);
-
     const sasUrl = await getAzureSasUrl(file.name, file.size);
-
     await uploadFileToAzure(sasUrl, file, fileId, onProgress);
-
     const azureBlobUrl = sasUrl.split("?")[0];
 
     const result = await sendUploadInfoToBackend(
@@ -142,7 +139,6 @@ export const uploadFileComplete = async (
 
     return result;
   } catch (error) {
-    // Mark upload as failed
     useUploadStore.getState().setUploading(false);
     throw error;
   }

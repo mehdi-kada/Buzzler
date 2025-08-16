@@ -2,6 +2,7 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine, Asyn
 from dotenv import load_dotenv
 from sqlalchemy.orm import DeclarativeBase
 import os
+import logging
 
 load_dotenv()
 
@@ -26,7 +27,7 @@ engine = create_async_engine(
     max_overflow=30,
     pool_timeout =30,
     pool_recycle=3600,      
-    echo=False   
+    echo=False,
     pool_reset_on_return='commit'
 )
 

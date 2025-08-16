@@ -1,15 +1,10 @@
 from __future__ import annotations
-
 from typing import Optional, TYPE_CHECKING
-
+from datetime import datetime
 from app.db.database import Base
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy import String, Integer, DateTime, Float, Text, Index, func, Enum as SAEnum
-from app.models.enums import VideoStatus
-
-
-
-
+from app.models.enums import VideoSource, VideoStatus
 
 class Video(Base):
     __tablename__ = "videos"
@@ -17,6 +12,8 @@ class Video(Base):
     # Primary fields
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     user_id: Mapped[int] = mapped_column(Integer, nullable=False, index=True)
+
+    source : Mapped[VideoSource] = mapped_column(SAEnum(VideoSource), nullable=False)
 
     # File information
     original_filename: Mapped[str] = mapped_column(String(255), nullable=False)
@@ -45,10 +42,10 @@ class Video(Base):
     error_message: Mapped[Optional[str]] = mapped_column(Text)
 
     # Timestamps
-    created_at: Mapped[DateTime] = mapped_column(DateTime, default=func.now())
-    updated_at: Mapped[DateTime] = mapped_column(DateTime, default=func.now(), onupdate=func.now())
-    upload_completed_at: Mapped[Optional[DateTime]] = mapped_column(DateTime)
-    processing_completed_at: Mapped[Optional[DateTime]] = mapped_column(DateTime)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=func.now(), onupdate=func.now())
+    upload_completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime)
+    processing_completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime)
 
     # Relationships
     clips: Mapped[list["Clip"]] = relationship("Clip", back_populates="video", cascade="all, delete-orphan")
