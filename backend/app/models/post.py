@@ -11,12 +11,12 @@ class Post(Base):
     """
     social media posts with scheduling and analytics
     """
-    __tablename__ = 'posts'
+    __tablename__ = 'post'
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
 
-    clip_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey('clips.id'), nullable=True, index=True)
-    account_id: Mapped[int] = mapped_column(Integer, ForeignKey('social_accounts.id'), nullable=False, index=True)
+    clip_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey('clip.id'), nullable=True, index=True)
+    account_id: Mapped[int] = mapped_column(Integer, ForeignKey('social_account.id'), nullable=False, index=True)
 
     # content
     content: Mapped[str] = mapped_column(Text, nullable=False)

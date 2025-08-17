@@ -1,11 +1,13 @@
 
 import secrets
 import time
-from typing import Optional
+from typing import Literal, Optional, cast
 from fastapi import Request, Response
 from itsdangerous import BadSignature, SignatureExpired, URLSafeTimedSerializer
 
-from app.core.config import Settings
+from app.config import settings
+
+
 
 
 class CSRFProtection:
@@ -17,10 +19,10 @@ class CSRFProtection:
     """
     def __init__(self):
         self.serializer = URLSafeTimedSerializer(
-            Settings.CSRF_SECRET_KEY,
+            settings.CSRF_SECRET_KEY,
             salt="csrf-token"
         )
-        self.token_expire_seconds = Settings.CSRF_TOKEN_EXPIRE_MINUTES * 60
+        self.token_expire_seconds = settings.CSRF_TOKEN_EXPIRE_MINUTES * 60
     
     def generate_csrf_token(self) -> str:
         token_data = {
@@ -42,20 +44,20 @@ class CSRFProtection:
     
     def set_csrf_cookie(self, response: Response, token: str) -> None:
         response.set_cookie(
-            key=Settings.CSRF_COOKIE_NAME,
+            key=settings.CSRF_COOKIE_NAME,
             value=token,
             max_age=self.token_expire_seconds,
-            secure=Settings.SECURE_COOKIES,  
-            httponly=False,  
-            samesite=Settings.COOKIE_SAMESITE,
-            domain=Settings.COOKIE_DOMAIN 
+            secure=settings.SECURE_COOKIES,
+            httponly=False,
+            samesite=cast(Optional[Literal["lax", "strict", "none"]], settings.CSRF_SAMESITE),
+            domain=settings.COOKIE_DOMAIN
         )
 
     def get_csrf_token_from_cookie(self, request: Request) -> Optional[str]:
-        return request.cookies.get(Settings.CSRF_COOKIE_NAME)
+        return request.cookies.get(settings.CSRF_COOKIE_NAME)
 
     def get_csrf_token_from_header(self, request: Request) -> Optional[str]:
-        return request.headers.get(Settings.CSRF_HEADER_NAME)
+        return request.headers.get(settings.CSRF_HEADER_NAME)
 
     def verify_csrf_protection(self, request: Request) -> bool:
         cookie_token = self.get_csrf_token_from_cookie(request)

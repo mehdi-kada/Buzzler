@@ -11,7 +11,7 @@ class User(Base):
     """
         core user table , stores all related user information
     """
-    __tablename__ = "users"
+    __tablename__ = "user"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
 

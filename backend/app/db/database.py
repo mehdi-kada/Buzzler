@@ -6,8 +6,6 @@ import logging
 
 load_dotenv()
 
-DATABASE_URL = os.getenv("DATABASE_URL")
-
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -19,7 +17,12 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
-logger.info(f"connecting to database : {DATABASE_URL.split("@")[-1] if "@" in DATABASE_URL else "local DB"}")
+DATABASE_URL = os.getenv("DATABASE_URL")
+if not DATABASE_URL:
+    logger.error("DATABASE_URL env var is not set. Set it before starting the app.")
+    raise RuntimeError("DATABASE_URL env var is required")
+
+logger.info(f"connecting to database : {DATABASE_URL.split('@')[-1] if '@' in DATABASE_URL else 'local DB'}")
 
 engine = create_async_engine(
     DATABASE_URL,

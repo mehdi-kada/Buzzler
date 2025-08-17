@@ -13,8 +13,10 @@ class CSRFMiddleware(BaseHTTPMiddleware):
             "/openapi.json",
             "/auth/oauth/callback",  
             "/auth/csrf-token",      
-            "/auth/refresh",         
-            "/auth/setup-session",  
+            "/auth/google/login",
+            "/auth/verify-account",
+            "/auth/login",
+            "/auth/register",
             "/health",               
         }
 
@@ -27,7 +29,13 @@ class CSRFMiddleware(BaseHTTPMiddleware):
             response = await call_next(request)
             return response
 
-        if any(request.url.path.startswith(path) for path in self.exempt_paths):
+        # Check exact path matches first
+        if request.url.path in self.exempt_paths:
+            response = await call_next(request)
+            return response
+
+        # Check pattern matches
+        if any(request.url.path.startswith(pattern) for pattern in self.exempt_patterns):
             response = await call_next(request)
             return response
 

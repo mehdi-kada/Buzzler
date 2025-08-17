@@ -4,9 +4,9 @@ import React, { useState, FormEvent, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useAuthStore } from "@/lib/store/authStore";
-import api from "@/lib/axios";
 import { useSearchParams, useRouter } from "next/navigation";
 import { LoginFormData, SignupFormData } from "@/types/types_auth";
+import api from "@/lib/axios/auth_interceptor";
 
 const loginWithGoogle = async () => {
   try {

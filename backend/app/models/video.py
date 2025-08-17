@@ -7,11 +7,11 @@ from sqlalchemy import String, Integer, DateTime, Float, Text, Index, func, Fore
 from app.models.enums import VideoSource, VideoStatus
 
 class Video(Base):
-    __tablename__ = "videos"
+    __tablename__ = "video"
 
     # Primary fields
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    user_id: Mapped[int] = mapped_column(Integer, ForeignKey('users.id'), nullable=False, index=True)
+    user_id: Mapped[int] = mapped_column(Integer, ForeignKey('user.id'), nullable=False, index=True)
 
     source : Mapped[VideoSource] = mapped_column(SAEnum(VideoSource), nullable=False)
 

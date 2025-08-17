@@ -34,6 +34,11 @@ services:
     # Expose port 3000 on the host and map it to port 3000 in the container
     ports:
       - "3000:3000"
+    # Load environment variables from the .env file
+    env_file:
+      - .env
+    environment:
+      - NEXT_PUBLIC_BACKEND_URL=http://backend:8000
     # Mount the local ./frontend folder into /app inside the container
     volumes:
       - ./frontend:/app
@@ -71,7 +76,6 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-
 
 # Declare named volumes used by services above
 volumes:

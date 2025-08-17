@@ -12,7 +12,7 @@ class AuditLog(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
 
-    user_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey('users.id'), nullable=True, index=True)  # Null for system actions
+    user_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey('user.id'), nullable=True, index=True)  # Null for system actions
 
     action: Mapped[ActionType] = mapped_column(SAEnum(ActionType), nullable=False, index=True)
     resource_type: Mapped[Optional[str]] = mapped_column(String(50), nullable=True, index=True)    # video, clip, post, etc.

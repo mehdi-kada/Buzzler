@@ -14,11 +14,11 @@ class SocialAccount(Base):
         supports multiple social media accounts per user
     """
 
-    __tablename__ = "social_accounts"
+    __tablename__ = "social_account"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
 
-    user_id: Mapped[int] = mapped_column(Integer, ForeignKey('users.id'), nullable=False, index=True)
+    user_id: Mapped[int] = mapped_column(Integer, ForeignKey('user.id'), nullable=False, index=True)
 
     # platform details
     platform: Mapped[SocialPlatform] = mapped_column(SAEnum(SocialPlatform), nullable=False)

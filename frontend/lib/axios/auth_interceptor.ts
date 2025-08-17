@@ -2,7 +2,7 @@ import axios from "axios";
 import { useAuthStore } from "../store/authStore";
 
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_BACKEND_URL,
+  baseURL: "http://localhost:8000",
   withCredentials: true,
 });
 
@@ -11,7 +11,7 @@ const getCsrfTokenFromCookie = (): string | null => {
   return match ? match[1] : null;
 };
 
-// request interceptor to handle the CSRF and auth token inclusion 
+// request interceptor to handle the CSRF and auth tokend inclusion 
 api.interceptors.request.use(
   async (config) => {
     const { accessToken } = useAuthStore.getState();
@@ -27,8 +27,9 @@ api.interceptors.request.use(
 
       if (!csrfToken) {
         try {
+          // Use axios directly to avoid circular interceptor calls
           const response = await axios.post(
-            `${process.env.NEXT_PUBLIC_BACKEND_URL}/auth/csrf-token`,
+            "http://localhost:8000/auth/csrf-token",
             {},
             { withCredentials: true }
           );
@@ -68,8 +69,8 @@ api.interceptors.response.use(
       }
     }
 
-    // Handle token refresh
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    // Handle token refresh - but avoid infinite loops
+    if (error.response?.status === 401 && !originalRequest._retry && originalRequest.url !== "/auth/refresh") {
       originalRequest._retry = true;
       try {
         const { data } = await api.post("/auth/refresh");
@@ -77,7 +78,6 @@ api.interceptors.response.use(
         originalRequest.headers.Authorization = `Bearer ${data.access_token}`;
         return api(originalRequest);
       } catch (refreshError) {
-        console.log("Refresh token failed, logging out user");
         useAuthStore.getState().logout();
 
         if (!window.location.pathname.includes("/auth/")) {

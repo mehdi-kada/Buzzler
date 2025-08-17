@@ -60,33 +60,28 @@ export const useAuthStore = create<AuthState>()(
       checkAuth: async () => {
         const { isAuthenticated, accessToken } = get();
 
-        if (isAuthenticated && !accessToken) {
-          try {
-            const match = document.cookie.match(/csrf_token=([^;]+)/);
-            const csrf = match ? match[1] : undefined;
-            const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/auth/refresh`, {
-              method: "POST",
-              credentials: "include",
-              headers: csrf ? { "X-CSRF-Token": csrf } : undefined,
-            });
-
-            if (response.ok) {
-              const data = await response.json();
-              set({ accessToken: data.access_token, isLoading: false });
-              return;
-            }
-          } catch (error) {
-            console.log("Token refresh failed during auth check");
-          }
-
-          get().logout();
-          return;
-        }
-
+        // If we have both auth state and token, we're good
         if (isAuthenticated && accessToken) {
           set({ isLoading: false });
           return;
         }
+
+        // If we think we're authenticated but don't have a token, try to refresh
+        if (isAuthenticated && !accessToken) {
+          try {
+            // Import api dynamically to avoid circular imports
+            const { default: api } = await import("../axios/auth_interceptor");
+            const response = await api.post("/auth/refresh");
+            set({ accessToken: response.data.access_token, isLoading: false });
+            return;
+          } catch (error) {
+            // Refresh failed, clear auth state
+            get().logout();
+            return;
+          }
+        }
+
+        // Not authenticated, ensure clean state
         set({
           isAuthenticated: false,
           accessToken: null,
@@ -94,7 +89,7 @@ export const useAuthStore = create<AuthState>()(
           isLoading: false,
         });
       },
-    }),
+    }), 
     {
       name: "auth-storage",
       partialize: (state) => ({

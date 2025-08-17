@@ -1,13 +1,14 @@
 from fastapi import HTTPException, status
 from httpx import AsyncClient
-from app.core.config import Settings
+
 from app.core.auth.providers.base import OAuthProvider
+from app.config import settings
 
 class GoogleProvider(OAuthProvider):
     def __init__(self):
-        self.client_id = Settings.GOOGLE_CLIENT_ID
-        self.client_secret = Settings.GOOGLE_CLIENT_SECRET
-        self.redirect_uri = Settings.REDIRECT_URI
+        self.client_id = settings.GOOGLE_CLIENT_ID
+        self.client_secret = settings.GOOGLE_CLIENT_SECRET
+        self.redirect_uri = settings.REDIRECT_URI
         self.token_url = "https://oauth2.googleapis.com/token"
         self.user_info_url = "https://www.googleapis.com/oauth2/v2/userinfo"
 

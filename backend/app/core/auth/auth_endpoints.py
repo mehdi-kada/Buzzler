@@ -364,7 +364,7 @@ async def setup_session(response: Response, db: AsyncSession = Depends(get_db), 
     return {"message": "Session setup successful", "csrf_token": csrf_token}
 
 
-@router.get("/csrf-token")
+@router.post("/csrf-token")
 async def generate_csrf_token(request: Request, response: Response):
     csrf_token = csrf_protection.generate_csrf_token()
     csrf_protection.set_csrf_cookie(response, csrf_token)

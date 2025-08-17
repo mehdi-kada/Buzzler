@@ -11,11 +11,11 @@ class Clip(Base):
     """
         clips generated from videos , optimized for batch processing
     """
-    __tablename__ = 'clips'
+    __tablename__ = 'clip'
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
 
-    video_id: Mapped[int] = mapped_column(Integer, ForeignKey('videos.id'), nullable=False, index=True)
+    video_id: Mapped[int] = mapped_column(Integer, ForeignKey('video.id'), nullable=False, index=True)
 
     # clip timing and format
     start_time: Mapped[int] = mapped_column(Integer, nullable=False)

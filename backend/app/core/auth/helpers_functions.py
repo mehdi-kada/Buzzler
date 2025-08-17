@@ -1,67 +1,42 @@
 from datetime import datetime, timedelta
-from typing import Any, Dict, Optional
-
+import uuid
 from fastapi import HTTPException, status, Response
 from passlib.context import CryptContext
 from jose import JWTError, jwt
 
 from email.message import EmailMessage
 import aiosmtplib
-from app.config import settings
+from app.config import Settings
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
 
 def hash_password(password: str) -> str:
     return pwd_context.hash(password)
 
-
-def verify_password(password: str, hashed_password: str) -> bool:
+def verify_password(password: str, hashed_password: str)-> bool:
     return pwd_context.verify(password, hashed_password)
-
 
 def hash_token(token: str) -> str:
     return pwd_context.hash(token)
 
-
-def verify_hash_token(token: str, hashed_token: str) -> bool:
+def verify_hash_token(token: str, hashed_token: str)-> bool:
     return pwd_context.verify(token, hashed_token)
 
-
-def _timestamp_from_delta(delta: timedelta) -> int:
-    """Return a unix timestamp (int) for now + delta."""
-    expire = datetime.utcnow() + delta
-    return int(expire.timestamp())
-
-
-def create_access_token(data: Dict[str, Any]) -> str:
-    """
-    Create a JWT access token.
-
-    The `exp` claim is set as an integer unix timestamp to avoid
-    JSON serialization issues and to satisfy JWT expectations.
-    """
+def create_access_token(data:dict) ->str:
     to_encode = data.copy()
-    exp_ts = _timestamp_from_delta(timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES))
-    to_encode.update({"exp": exp_ts, "type": "access"})
-    return jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
+    expire = datetime.utcnow() + timedelta(minutes=Settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    to_encode.update({"exp":expire, "type":"access"})
+    return jwt.encode(to_encode, Settings.SECRET_KEY, algorithm=Settings.ALGORITHM)
 
-
-def create_refresh_token(data: Dict[str, Any]) -> str:
-    """
-    Create a JWT refresh token.
-
-    The `exp` claim is an integer unix timestamp.
-    """
+def create_refresh_token(data:dict) -> str : 
     to_encode = data.copy()
-    exp_ts = _timestamp_from_delta(timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS))
-    to_encode.update({"exp": exp_ts, "type": "refresh"})
-    return jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
+    expire = datetime.utcnow() + timedelta(days=Settings.REFRESH_TOKEN_EXPIRE_DAYS)
+    to_encode.update({"exp": expire, "type":"refresh"})
+    return jwt.encode(to_encode, Settings.SECRET_KEY, algorithm=Settings.ALGORITHM)
 
-
-def verify_token(token: str) -> Dict[str, Any]:
+def verify_token(token: str) -> dict:
     try:
-        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        payload = jwt.decode(token, Settings.SECRET_KEY, algorithms=[Settings.ALGORITHM])
         return payload
     except JWTError:
         raise HTTPException(
@@ -70,73 +45,42 @@ def verify_token(token: str) -> Dict[str, Any]:
             headers={"WWW-Authenticate": "Bearer"},
         )
 
+def generate_verification_token(email:str) -> str:
+    data = {"sub":email, "type":"verification"}
+    expire = datetime.utcnow() + timedelta(hours=24)
+    data.update({"exp": expire})
+    return jwt.encode(data, Settings.SECRET_KEY, algorithm=Settings.ALGORITHM)
 
-def generate_verification_token(email: str) -> str:
-    """
-    Generate an account verification JWT with integer `exp` claim.
-    """
-    data: Dict[str, Any] = {"sub": email, "type": "verification"}
-    exp_ts = _timestamp_from_delta(timedelta(hours=24))
-    data.update({"exp": exp_ts})
-    return jwt.encode(data, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
-
-
-def _normalize_samesite(value: Optional[str]) -> Optional[str]:
-    """
-    Normalize a configured samesite value into the accepted literal strings
-    used by Starlette/FastAPI: 'lax', 'strict', 'none'. Return None if
-    the provided value is not valid.
-    """
-    if not value:
-        return None
-    v = value.strip().lower()
-    if v in ("lax", "strict", "none"):
-        return v
-    return None
-
-
-def set_refresh_token_cookie(response: Response, refresh_token: str) -> None:
-    """
-    Set the refresh token as an HttpOnly cookie.
-
-    The samesite value is normalized to one of 'lax', 'strict', 'none' or
-    left as None to let the framework default.
-    """
-    samesite_val = _normalize_samesite(getattr(settings, "COOKIE_SAMESITE", None))
+def set_refresh_token_cookie(response: Response, refresh_token:str) :
     response.set_cookie(
-        key="refresh_token",
+        key= "refresh_token",
         value=refresh_token,
         httponly=True,
-        secure=getattr(settings, "SECURE_COOKIES", False),  # should be True in production
-        samesite=samesite_val,
-        domain=getattr(settings, "COOKIE_DOMAIN", None),
-        max_age=int(getattr(settings, "REFRESH_TOKEN_EXPIRE_DAYS", 7) * 24 * 60 * 60),
+        secure=Settings.SECURE_COOKIES,  # set to true in production
+        samesite=Settings.COOKIE_SAMESITE,
+        domain=Settings.COOKIE_DOMAIN,
+        max_age=Settings.REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60
     )
 
-
-def clear_refresh_cookie(response: Response) -> None:
-    """
-    Clear the refresh token cookie by expiring it.
-    """
-    samesite_val = _normalize_samesite(getattr(settings, "COOKIE_SAMESITE", None))
+def clear_refresh_cookie(response: Response):
     response.set_cookie(
         key="refresh_token",
         value="",
         expires=0,
         httponly=True,
-        secure=getattr(settings, "SECURE_COOKIES", False),
-        samesite=samesite_val,
-        domain=getattr(settings, "COOKIE_DOMAIN", None),
+        secure=Settings.SECURE_COOKIES,
+        samesite=Settings.COOKIE_SAMESITE,
+        domain=Settings.COOKIE_DOMAIN
     )
 
 
-async def send_verification_email(email: str, token: str) -> None:
+async def send_verification_email(email:str, token:str):
     message = EmailMessage()
-    message["From"] = settings.SENDER_EMAIL
+    message["From"] = Settings.SENDER_EMAIL
     message["To"] = email
     message["Subject"] = "Verify Your Buzzler Account"
-    verification_url = f"{settings.BACKEND_URL}/auth/verify-account?token={token}"
-
+    verification_url = f"{Settings.BACKEND_URL}/auth/verify-account?token={token}"
+    
     plain_text_content = f"Please verify your email by clicking this link: {verification_url}"
     message.set_content(plain_text_content)
 
@@ -152,24 +96,23 @@ async def send_verification_email(email: str, token: str) -> None:
         </body>
     </html>
     """
-    message.add_alternative(html_content, subtype="html")
+    message.add_alternative(html_content, subtype='html')
 
     await aiosmtplib.send(
         message,
-        hostname=settings.SMTP_HOST,
-        port=settings.SMTP_PORT,
-        username=settings.SMTP_USERNAME,
-        password=settings.SMTP_PASSWORD,
+        hostname=Settings.SMTP_HOST,
+        port=Settings.SMTP_PORT,
+        username=Settings.SMTP_USERNAME,
+        password=Settings.SMTP_PASSWORD,
         use_tls=False,
     )
 
-
-async def send_password_verification_email(email: str, token: str) -> None:
+async def send_password_verification_email(email:str, token:str):
     message = EmailMessage()
-    message["From"] = settings.SENDER_EMAIL
+    message["From"] = Settings.SENDER_EMAIL
     message["To"] = email
     message["Subject"] = "Reset your Buzzler account password"
-    verification_url = f"{settings.BACKEND_URL}/auth/password-reset?token={token}"
+    verification_url = f"{Settings.BACKEND_URL}/auth/password-reset?token={token}"
 
     plain_text_content = f"You can reset your password by clicking on this link: {verification_url}"
     message.set_content(plain_text_content)
@@ -187,30 +130,25 @@ async def send_password_verification_email(email: str, token: str) -> None:
         </body>
     </html>
     """
-    message.add_alternative(html_content, subtype="html")
+    message.add_alternative(html_content, subtype='html')
 
     await aiosmtplib.send(
         message,
-        hostname=settings.SMTP_HOST,
-        port=settings.SMTP_PORT,
-        username=settings.SMTP_USERNAME,
-        password=settings.SMTP_PASSWORD,
+        hostname=Settings.SMTP_HOST,
+        port=Settings.SMTP_PORT,
+        username=Settings.SMTP_USERNAME,
+        password=Settings.SMTP_PASSWORD,
         use_tls=False,
     )
 
-
-async def issue_tokens_and_set_cookie(user: Any, response: Response, db: Any) -> str:
-    """
-    Create access and refresh tokens, store a hashed refresh token on the user,
-    commit the change, and set the refresh token cookie.
-    """
+async def issue_tokens_and_set_cookie(user, response: Response, db) -> str:
+    """creates tokens, stores the refresh token hash, and sets the cookie."""
     access_token = create_access_token(data={"sub": user.email})
     refresh_token = create_refresh_token(data={"sub": user.email})
-
-    # store hashed refresh token on the user model (ORM-managed attribute)
-    setattr(user, "refresh_token", hash_token(refresh_token))
+    
+    user.refresh_token = hash_token(refresh_token)
     await db.commit()
-
+    
     set_refresh_token_cookie(response, refresh_token)
-
+    
     return access_token

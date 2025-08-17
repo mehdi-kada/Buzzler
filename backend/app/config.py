@@ -14,6 +14,7 @@ class Settings:
     CSRF_TOKEN_EXPIRE_MINUTES: int = int(os.getenv("CSRF_TOKEN_EXPIRE_MINUTES", "60"))
     CSRF_COOKIE_NAME: str = "csrf_token"
     CSRF_HEADER_NAME: str = "X-CSRF-Token"
+    CSRF_SAMESITE: str = os.getenv("CSRF_SAMESITE", "lax")  
 
     # Database settings
     DATABASE_URL: str = os.getenv("DATABASE_URL", "sqlite:///./buzzler.db")

@@ -17,8 +17,8 @@ class AnalyticsData(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
 
     # data source
-    account_id: Mapped[int] = mapped_column(Integer, ForeignKey("social_accounts.id"), nullable=False, index=True)
-    post_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("posts.id"), nullable=True, index=True)
+    account_id: Mapped[int] = mapped_column(Integer, ForeignKey("social_account.id"), nullable=False, index=True)
+    post_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("post.id"), nullable=True, index=True)
 
     # analytics metadata
     type: Mapped[AnalyticsType] = mapped_column(SAEnum(AnalyticsType), nullable=False, index=True)
