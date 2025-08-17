@@ -13,7 +13,7 @@ class Video(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     user_id: Mapped[int] = mapped_column(Integer, ForeignKey('user.id'), nullable=False, index=True)
 
-    source : Mapped[VideoSource] = mapped_column(SAEnum(VideoSource), nullable=False)
+    source : Mapped[VideoSource] = mapped_column(SAEnum(VideoSource, values_callable=lambda obj: [e.value for e in obj]), nullable=False)
 
     # File information
     original_filename: Mapped[str] = mapped_column(String(255), nullable=False)
@@ -31,7 +31,7 @@ class Video(Base):
     upload_expires_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
 
     # Processing status
-    status: Mapped[VideoStatus] = mapped_column(SAEnum(VideoStatus), default=VideoStatus.PENDING_UPLOAD, index=True)
+    status: Mapped[VideoStatus] = mapped_column(SAEnum(VideoStatus, values_callable=lambda obj: [e.value for e in obj]), default=VideoStatus.PENDING_UPLOAD, index=True)
 
     # Video metadata (filled during processing)
     duration_seconds: Mapped[Optional[float]] = mapped_column(Float)
@@ -43,7 +43,7 @@ class Video(Base):
 
     # Timestamps
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
-    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
     upload_completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     processing_completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
 

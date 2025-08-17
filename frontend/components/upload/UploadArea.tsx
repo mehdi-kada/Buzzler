@@ -1,3 +1,4 @@
+"use client"
 import React, { useCallback, useRef, useState } from "react";
 import ProgressBar from "./ProgressBar";
 import { uploadFileComplete } from "../../lib/axios/upload_api_functions";
@@ -24,10 +25,8 @@ export default function UploadArea() {
   const [tagsRaw, setTagsRaw] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const { isUploading, setUploading } = useUploadStore((s) => ({
-    isUploading: s.isUploading,
-    setUploading: s.setUploading,
-  }));
+  const isUploading = useUploadStore((state) => state.isUploading);
+  const setUploading = useUploadStore((state) => state.setUploading);
 
   const resetForm = useCallback(() => {
     setFile(null);
@@ -124,7 +123,7 @@ export default function UploadArea() {
       // store will be reset by upload helpers, but ensure uploading is false
       setUploading(false);
     }
-  }, [file, title, description, tagsRaw, resetForm, setUploading]);
+  }, [file, resetForm, setUploading]);
 
   const handleCancelClick = useCallback(() => {
     // user wants to cancel before starting upload

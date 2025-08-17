@@ -24,5 +24,5 @@ app.add_middleware(
 
 app.include_router(auth_router, prefix="/auth", tags=["Auth"])
 app.include_router(users_router, tags=["Users"])
-app.include_router(upload_video_router, prefix="/upload", tags=["Video"])
+app.include_router(upload_video_router, tags=["Video"])
 

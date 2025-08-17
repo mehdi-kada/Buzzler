@@ -29,16 +29,21 @@ api.interceptors.response.use(
 export const getAzureSasUrl = async (
   fileName: string,
   fileSize: number,
-): Promise<string> => {
+): Promise<{ sasUrl: string; filePath: string; videoId: number }> => {
   try {
-    const response = await api.post<{ sas_url: string }>(
-      "/upload/generate-sas",
-      {
-        file_name: fileName,
-        file_size: fileSize,
-      },
-    );
-    return response.data.sas_url;
+    const response = await api.post<{
+      sas_url: string;
+      file_path: string;
+      video_id: number;
+    }>("/upload/generate-sas", {
+      file_name: fileName,
+      file_size: fileSize,
+    });
+    return {
+      sasUrl: response.data.sas_url,
+      filePath: response.data.file_path,
+      videoId: response.data.video_id,
+    };
   } catch (error) {
     // The error will be caught by the interceptor and a toast will be shown
     throw error;
@@ -86,12 +91,6 @@ export const uploadFileToAzure = async (
       toast.error("File upload to Azure failed");
     }
     throw error;
-  } finally {
-    // Only reset if this upload is still the active one for handling mulitpe uploads
-    const currentFileId = useUploadStore.getState().fileId;
-    if (currentFileId === fileId) {
-      useUploadStore.getState().reset();
-    }
   }
 };
 
@@ -102,13 +101,17 @@ export const sendUploadInfoToBackend = async (
   fileName: string,
   fileSize: number,
   azureBlobUrl: string,
+  videoId: number,
 ) => {
   try {
-    const response = await api.post("/upload/complete", {
-      file_name: fileName,
-      file_size: fileSize,
-      azure_blob_url: azureBlobUrl,
-    });
+    const response = await api.post(
+      `/upload/complete?video_id=${videoId}`,
+      {
+        file_name: fileName,
+        file_size: fileSize,
+        azure_blob_url: azureBlobUrl,
+      },
+    );
     toast.success("File uploaded and registered successfully!");
     return response.data;
   } catch (error) {
@@ -125,16 +128,24 @@ export const uploadFileComplete = async (
   onProgress?: (progress: number) => void,
 ) => {
   try {
-    
     useUploadStore.getState().setUploading(true, file.name, fileId);
-    const sasUrl = await getAzureSasUrl(file.name, file.size);
+    
+    // Step 1: Get SAS URL and video ID from backend
+    const { sasUrl, filePath, videoId } = await getAzureSasUrl(
+      file.name,
+      file.size,
+    );
+    
+    // Step 2: Upload file to Azure
     await uploadFileToAzure(sasUrl, file, fileId, onProgress);
+    
+    // Step 3: Notify backend that upload is complete
     const azureBlobUrl = sasUrl.split("?")[0];
-
     const result = await sendUploadInfoToBackend(
       file.name,
       file.size,
       azureBlobUrl,
+      videoId,
     );
 
     return result;

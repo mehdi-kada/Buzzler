@@ -1,3 +1,4 @@
+"use client";
 import React from "react";
 import { useUploadStore } from "../../lib/store/uploadStore";
 
@@ -77,14 +78,10 @@ export default function ProgressBar({
   onCancel,
   persist = false,
 }: ProgressBarProps) {
-  const { progress, isUploading, fileName, setUploading } = useUploadStore(
-    (state) => ({
-      progress: state.progress,
-      isUploading: state.isUploading,
-      fileName: state.fileName,
-      setUploading: state.setUploading,
-    }),
-  );
+  const progress = useUploadStore((state) => state.progress);
+  const isUploading = useUploadStore((state) => state.isUploading);
+  const fileName = useUploadStore((state) => state.fileName);
+  const setUploading = useUploadStore((state) => state.setUploading);
 
   // If not uploading and not persisting, render nothing
   if (!isUploading && !persist) {

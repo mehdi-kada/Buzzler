@@ -13,6 +13,10 @@ asyncpg
 websockets
 python-jose[cryptography]
 passlib[bcrypt]
+# pin bcrypt to v3.x to ensure compatibility with passlib which expects the older
+# bcrypt package metadata (some bcrypt v4+ builds changed internals causing
+# passlib to fall back with a warning). Use <4.0.0 to be safe.
+bcrypt<4.0.0
 aiosmtplib
 httpx
 itsdangerous

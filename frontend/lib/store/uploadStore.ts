@@ -5,6 +5,7 @@ interface UploadState {
   isUploading: boolean;
   fileName: string | null;
   fileId: string | null; // To track which file is being uploaded
+  videoId: number | null; // To track the video ID in the database
 
   setProgress: (progress: number) => void;
 
@@ -12,6 +13,7 @@ interface UploadState {
     isUploading: boolean,
     fileName?: string | null,
     fileId?: string | null,
+    videoId?: number | null,
   ) => void;
 
   // Reset the store to initial defaults
@@ -23,6 +25,7 @@ export const useUploadStore = create<UploadState>((set, get) => ({
   isUploading: false,
   fileName: null,
   fileId: null,
+  videoId: null,
 
   setProgress: (progress: number) => {
     // Clamp to valid bounds and update
@@ -34,6 +37,7 @@ export const useUploadStore = create<UploadState>((set, get) => ({
     isUploading: boolean,
     fileName?: string | null,
     fileId?: string | null,
+    videoId?: number | null,
   ) => {
     if (isUploading) {
       // If starting an upload, preserve previous values when not provided
@@ -42,6 +46,7 @@ export const useUploadStore = create<UploadState>((set, get) => ({
         isUploading: true,
         fileName: fileName ?? prev.fileName,
         fileId: fileId ?? prev.fileId,
+        videoId: videoId ?? prev.videoId,
       });
     } else {
       // If stopping an upload, clear identifying info and reset progress
@@ -49,6 +54,7 @@ export const useUploadStore = create<UploadState>((set, get) => ({
         isUploading: false,
         fileName: null,
         fileId: null,
+        videoId: null,
         progress: 0,
       });
     }
@@ -60,5 +66,6 @@ export const useUploadStore = create<UploadState>((set, get) => ({
       isUploading: false,
       fileName: null,
       fileId: null,
+      videoId: null,
     }),
 }));

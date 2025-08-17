@@ -17,7 +17,9 @@ class CSRFMiddleware(BaseHTTPMiddleware):
             "/auth/verify-account",
             "/auth/login",
             "/auth/register",
-            "/health",               
+            "/health", 
+            "/generate-sas",
+            "/complete", 
         }
 
         self.exempt_patterns = [
