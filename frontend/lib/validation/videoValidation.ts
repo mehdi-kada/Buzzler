@@ -1,5 +1,5 @@
 
-import { videoMeta, videoValidationResult, videoValidation as videoValidationConfig } from "@/types/video_validation";
+import { videoMeta, videoValidationResult, videoValidationConfig as videoValidationConfig } from "@/types/video_validation";
 
 export class videoValidation {
 

@@ -1,4 +1,4 @@
-export interface videoValidation {
+export interface videoValidationConfig {
     maxSizeInMB?: number;
     maxDurationInSeconds?: number;
     allowedFormats?: string[];
