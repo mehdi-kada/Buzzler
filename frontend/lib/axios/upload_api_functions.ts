@@ -133,7 +133,7 @@ export const uploadFileComplete = async (
     // Step 1: Get SAS URL and video ID from backend
     const { sasUrl, filePath, videoId } = await getAzureSasUrl(
       file.name,
-      file.size,
+      file.size,    
     );
     
     // Step 2: Upload file to Azure
