@@ -19,6 +19,12 @@ export type UploadFormProps = {
    * Additional className to apply to the outer container.
    */
   className?: string;
+  
+  /**
+   * Whether to show the metadata form (title, description, tags).
+   * Defaults to true.
+   */
+  showMetadataForm?: boolean;
 };
 
 /**
@@ -35,6 +41,7 @@ export default function UploadForm({
   title = "Upload video",
   subtitle = "Drag & drop a video file or click to select. Supported: MP4, MOV, WEBM.",
   className,
+  showMetadataForm = true,
 }: UploadFormProps) {
   return (
     <div
@@ -70,7 +77,7 @@ export default function UploadForm({
         )}
       </div>
 
-      <UploadArea />
+      <UploadArea showMetadataForm={showMetadataForm} />
     </div>
   );
 }

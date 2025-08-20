@@ -4,6 +4,8 @@ import ProgressBar from "./ProgressBar";
 import { uploadFileComplete } from "../../lib/axios/upload_api_functions";
 import { useUploadStore } from "../../lib/store/uploadStore";
 import { toast } from "sonner";
+import { useVideoValidation } from "../../hooks/useVideoValidation";
+import { videoValidationConfig } from "../../types/video_validation";
 
 /**
  * UploadArea
@@ -12,11 +14,18 @@ import { toast } from "sonner";
  * (title, description, tags) before starting the upload, shows the progress bar
  * while uploading and allows cancelling via the progress UI.
  *
- * This component intentionally keeps styling inline/simple so it can be dropped
- * into existing pages without requiring CSS changes.
+ * This component has been updated to use CSS classes from globals.css for consistent styling.
  */
 
-export default function UploadArea() {
+type UploadAreaProps = {
+  /**
+   * Whether to show the metadata form (title, description, tags).
+   * Defaults to true.
+   */
+  showMetadataForm?: boolean;
+};
+
+export default function UploadArea({ showMetadataForm = true }: UploadAreaProps) {
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [file, setFile] = useState<File | null>(null);
@@ -126,61 +135,19 @@ export default function UploadArea() {
   }, [file, resetForm, setUploading]);
 
   const handleCancelClick = useCallback(() => {
-    // user wants to cancel before starting upload
     resetForm();
   }, [resetForm]);
 
-  const areaBaseStyle: React.CSSProperties = {
-    borderRadius: 8,
-    border: "2px dashed #cbd5e1",
-    background: isDragging ? "#f1f5f9" : "#ffffff",
-    padding: 20,
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "stretch",
-    gap: 12,
-    maxWidth: 800,
-    boxSizing: "border-box",
-  };
-
-  const dropTextStyle: React.CSSProperties = {
-    textAlign: "center",
-    color: "#0f172a",
-    fontSize: 15,
-  };
-
-  const controlsRowStyle: React.CSSProperties = {
-    display: "flex",
-    gap: 8,
-    alignItems: "center",
-  };
-
-  const btnStyle: React.CSSProperties = {
-    padding: "8px 12px",
-    background: "#4f46e5",
-    color: "#fff",
-    border: "none",
-    borderRadius: 6,
-    cursor: "pointer",
-  };
-
-  const secondaryBtnStyle: React.CSSProperties = {
-    padding: "8px 12px",
-    background: "transparent",
-    color: "#334155",
-    border: "1px solid #e2e8f0",
-    borderRadius: 6,
-    cursor: "pointer",
-  };
-
   return (
-    <div>
+    <div 
+      className="w-full"
+      onDrop={onDrop}
+      onDragOver={onDragOver}
+      onDragEnter={onDragOver}
+      onDragLeave={onDragLeave}
+    >
       <div
-        style={areaBaseStyle}
-        onDrop={onDrop}
-        onDragOver={onDragOver}
-        onDragEnter={onDragOver}
-        onDragLeave={onDragLeave}
+        className={`upload-area p-8 rounded-lg w-full ${isDragging ? 'dragover' : ''}`}
         role="button"
         tabIndex={0}
         onKeyDown={(e) => {
@@ -195,99 +162,62 @@ export default function UploadArea() {
           ref={inputRef}
           type="file"
           accept="video/*"
-          style={{ display: "none" }}
+          className="hidden"
           onChange={onFileInputChange}
         />
 
-        <div style={dropTextStyle}>
-          <div style={{ fontWeight: 600, marginBottom: 6 }}>
+        <div className="text-center mb-6">
+          <div className="w-16 h-16 bg-gradient-to-r from-pink-600 to-orange-500 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg className="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z" />
+            </svg>
+          </div>
+          <div className="text-xl font-semibold text-white mb-2">
             {isDragging
               ? "Drop files here to upload"
-              : "Drag & drop a video or click to select"}
+              : "Drop your video here"}
           </div>
-
-          <div style={{ color: "#475569", fontSize: 13 }}>
-            MP4, MOV, WEBM etc. Max 2GB.
+          <div className="text-gray-300 mb-6">
+            or click to browse files
           </div>
-        </div>
-
-        <div style={controlsRowStyle}>
-          <button
-            type="button"
-            style={btnStyle}
+          <button 
+            type="button" 
+            className="btn-primary px-6 py-3 rounded-lg font-semibold"
             onClick={onChooseFile}
             aria-label="Choose a file to upload"
           >
-            Choose file
+            Choose File
           </button>
+          <p className="text-sm text-gray-400 mt-4">
+            Supports MP4, MOV, AVI, MKV up to 2GB
+          </p>
+        </div>
 
-          <button
-            type="button"
-            style={secondaryBtnStyle}
-            onClick={() => {
-              // quick demo action: clear previously selected file
-              resetForm();
-            }}
-          >
-            Clear
-          </button>
-
-          <div style={{ marginLeft: "auto", color: "#64748b", fontSize: 13 }}>
+        <div className="flex items-center justify-between mb-4">
+          <div className="text-sm text-gray-300">
             {file
               ? `${file.name} • ${(file.size / (1024 * 1024)).toFixed(1)} MB`
               : "No file selected"}
           </div>
+          {file && (
+            <button
+              type="button"
+              className="btn-secondary px-3 py-1 rounded text-sm"
+              onClick={() => {
+                // quick demo action: clear previously selected file
+                resetForm();
+              }}
+            >
+              Clear
+            </button>
+          )}
         </div>
 
-        {/* Metadata form */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          <input
-            placeholder="Title (optional)"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            style={{
-              padding: "8px 10px",
-              borderRadius: 6,
-              border: "1px solid #e6eef8",
-              outline: "none",
-            }}
-            disabled={isUploading}
-          />
-          <textarea
-            placeholder="Description (optional)"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            rows={3}
-            style={{
-              padding: "8px 10px",
-              borderRadius: 6,
-              border: "1px solid #e6eef8",
-              outline: "none",
-            }}
-            disabled={isUploading}
-          />
-          <input
-            placeholder="Tags (comma separated)"
-            value={tagsRaw}
-            onChange={(e) => setTagsRaw(e.target.value)}
-            style={{
-              padding: "8px 10px",
-              borderRadius: 6,
-              border: "1px solid #e6eef8",
-              outline: "none",
-            }}
-            disabled={isUploading}
-          />
-        </div>
 
-        <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
+        <div className="flex justify-end space-x-3 mt-6">
           <button
             type="button"
-            style={{
-              ...secondaryBtnStyle,
-              opacity: file ? 1 : 0.6,
-              cursor: file ? "pointer" : "not-allowed",
-            }}
+            className={`btn-secondary px-6 py-3 rounded-lg font-semibold ${!file || isUploading || isSubmitting ? 'opacity-60 cursor-not-allowed' : ''}`}
             onClick={handleCancelClick}
             disabled={!file || isUploading || isSubmitting}
           >
@@ -296,11 +226,7 @@ export default function UploadArea() {
 
           <button
             type="button"
-            style={{
-              ...btnStyle,
-              opacity: file ? 1 : 0.6,
-              cursor: file ? "pointer" : "not-allowed",
-            }}
+            className={`btn-primary px-6 py-3 rounded-lg font-semibold ${!file || isUploading || isSubmitting ? 'opacity-60 cursor-not-allowed' : ''}`}
             onClick={onStartUpload}
             disabled={!file || isUploading || isSubmitting}
           >
@@ -310,14 +236,14 @@ export default function UploadArea() {
 
         {/* Show small hint when dragging files */}
         {isDragging && (
-          <div style={{ color: "#0ea5a0", fontSize: 13, marginTop: 4 }}>
+          <div className="text-green-500 text-sm mt-4 text-center">
             Release to upload
           </div>
         )}
       </div>
 
       {/* Progress bar rendered below the area. The ProgressBar reads state from the upload store. */}
-      <div style={{ marginTop: 12 }}>
+      <div className="mt-6">
         <ProgressBar />
       </div>
     </div>
