@@ -17,15 +17,8 @@ import { videoValidationConfig } from "../../types/video_validation";
  * This component has been updated to use CSS classes from globals.css for consistent styling.
  */
 
-type UploadAreaProps = {
-  /**
-   * Whether to show the metadata form (title, description, tags).
-   * Defaults to true.
-   */
-  showMetadataForm?: boolean;
-};
 
-export default function UploadArea({ showMetadataForm = true }: UploadAreaProps) {
+export default function UploadArea() {
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [file, setFile] = useState<File | null>(null);
@@ -33,6 +26,19 @@ export default function UploadArea({ showMetadataForm = true }: UploadAreaProps)
   const [description, setDescription] = useState("");
   const [tagsRaw, setTagsRaw] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Configure video validation with appropriate limits
+  const validationConfig: videoValidationConfig = {
+    maxSizeInMB: 2000, // 2GB
+    maxDurationInSeconds: 3600, // 1 hour
+    allowedFormats: ['mp4', 'mov', 'avi', 'mkv', 'webm'],
+    minWidth: 320,
+    minHeight: 240,
+    maxWidth: 3840, // 4K
+    maxHeight: 2160, // 4K
+  };
+
+  const { isValidating, validationResult, validateVideo, resetValidation } = useVideoValidation(validationConfig);
 
   const isUploading = useUploadStore((state) => state.isUploading);
   const setUploading = useUploadStore((state) => state.setUploading);
@@ -42,21 +48,27 @@ export default function UploadArea({ showMetadataForm = true }: UploadAreaProps)
     setTitle("");
     setDescription("");
     setTagsRaw("");
-  }, []);
+    resetValidation();
+  }, [resetValidation]);
 
   const handleFiles = useCallback((files: FileList | null) => {
     if (!files || files.length === 0) return;
     const first = files[0];
 
-    // Basic validation: only allow reasonably sized files (e.g., <= 2GB) and common video types
-    const maxBytes = 2 * 1024 * 1024 * 1024; // 2GB
-    if (first.size > maxBytes) {
-      toast.error("File is too large. Maximum allowed size is 2GB.");
-      return;
-    }
-
-    setFile(first);
-  }, []);
+    // Validate the video file using our validation hook
+    validateVideo(first).then((result) => {
+      if (result.isValid) {
+        setFile(first);
+      } else {
+        // Show validation errors to the user
+        result.errors.forEach(error => {
+          toast.error(error);
+        });
+      }
+    }).catch((error) => {
+      toast.error("Failed to validate video file");
+    });
+  }, [validateVideo]);
 
   const onDrop = useCallback(
     (e: React.DragEvent<HTMLDivElement>) => {
@@ -105,6 +117,14 @@ export default function UploadArea({ showMetadataForm = true }: UploadAreaProps)
       return;
     }
 
+    // Check if we have a valid validation result
+    if (validationResult && !validationResult.isValid) {
+      validationResult.errors.forEach(error => {
+        toast.error(error);
+      });
+      return;
+    }
+
     // create a simple unique file id for tracking this upload in store
     const fileId = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 9)}`;
 
@@ -132,7 +152,7 @@ export default function UploadArea({ showMetadataForm = true }: UploadAreaProps)
       // store will be reset by upload helpers, but ensure uploading is false
       setUploading(false);
     }
-  }, [file, resetForm, setUploading]);
+  }, [file, resetForm, setUploading, validationResult]);
 
   const handleCancelClick = useCallback(() => {
     resetForm();
@@ -199,6 +219,21 @@ export default function UploadArea({ showMetadataForm = true }: UploadAreaProps)
               ? `${file.name} • ${(file.size / (1024 * 1024)).toFixed(1)} MB`
               : "No file selected"}
           </div>
+          {isValidating && (
+            <div className="text-sm text-yellow-500">
+              Validating...
+            </div>
+          )}
+          {validationResult && !validationResult.isValid && (
+            <div className="text-sm text-red-500">
+              Validation failed
+            </div>
+          )}
+          {validationResult && validationResult.isValid && (
+            <div className="text-sm text-green-500">
+              Valid
+            </div>
+          )}
           {file && (
             <button
               type="button"
@@ -217,20 +252,20 @@ export default function UploadArea({ showMetadataForm = true }: UploadAreaProps)
         <div className="flex justify-end space-x-3 mt-6">
           <button
             type="button"
-            className={`btn-secondary px-6 py-3 rounded-lg font-semibold ${!file || isUploading || isSubmitting ? 'opacity-60 cursor-not-allowed' : ''}`}
+            className={`btn-secondary px-6 py-3 rounded-lg font-semibold ${!file || isUploading || isSubmitting || isValidating ? 'opacity-60 cursor-not-allowed' : ''}`}
             onClick={handleCancelClick}
-            disabled={!file || isUploading || isSubmitting}
+            disabled={!file || isUploading || isSubmitting || isValidating}
           >
             Cancel
           </button>
 
           <button
             type="button"
-            className={`btn-primary px-6 py-3 rounded-lg font-semibold ${!file || isUploading || isSubmitting ? 'opacity-60 cursor-not-allowed' : ''}`}
+            className={`btn-primary px-6 py-3 rounded-lg font-semibold ${!file || isUploading || isSubmitting || isValidating ? 'opacity-60 cursor-not-allowed' : ''}`}
             onClick={onStartUpload}
-            disabled={!file || isUploading || isSubmitting}
+            disabled={!file || isUploading || isSubmitting || isValidating}
           >
-            {isSubmitting || isUploading ? "Uploading…" : "Upload"}
+            {isSubmitting || isUploading ? "Uploading…" : isValidating ? "Validating…" : "Upload"}
           </button>
         </div>
 

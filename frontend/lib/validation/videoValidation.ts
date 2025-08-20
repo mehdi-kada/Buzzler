@@ -28,7 +28,6 @@ export class videoValidation {
 
         
         if (file && file.size > this.config.maxSizeInMB * 1024 * 1024) {
-            errors.push(`File is too large. Maximum size is ${this.config.maxSizeInMB}MB`);
             errors.push(`File size must be less than ${this.config.maxSizeInMB}MB`);
         }
 

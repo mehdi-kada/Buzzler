@@ -3,7 +3,7 @@ import { videoValidationConfig, videoValidationResult } from "@/types/video_vali
 import { useCallback, useState } from "react";
 
 
-export const useVideoValidation = async(config: videoValidationConfig) => {
+export const useVideoValidation = (config: videoValidationConfig) => {
     const [isValidating, setIsValidating] = useState(false);
     const [validationResult, setValidationResult] = useState<videoValidationResult | null>(null);
 
@@ -14,7 +14,7 @@ export const useVideoValidation = async(config: videoValidationConfig) => {
         try{
             const result = await validator.validateVideo(file);
             setValidationResult(result);
-            return result
+            return result;
         }catch (error) {
             const errorResult: videoValidationResult = {
                 isValid: false,
@@ -39,4 +39,4 @@ export const useVideoValidation = async(config: videoValidationConfig) => {
         validateVideo,
         resetValidation,
     };
-}
+};
