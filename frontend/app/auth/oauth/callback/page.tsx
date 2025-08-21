@@ -3,7 +3,8 @@
 import { useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuthStore } from "@/lib/store/authStore";
-import api from "@/lib/axios";
+import api from "@/lib/axios/auth_interceptor";
+import { toast } from "sonner";
 
 export default function OAuthCallbackPage() {
   const router = useRouter();
@@ -31,7 +32,8 @@ export default function OAuthCallbackPage() {
           // Redirect to dashboard
           router.push("/dashboard");
         } catch (error) {
-          console.error("OAuth callback failed:", error);
+          // Inform the user and redirect to login
+          toast.error("OAuth login failed. Please try again.");
           router.push("/auth/login?error=oauth_error");
         }
       } else {

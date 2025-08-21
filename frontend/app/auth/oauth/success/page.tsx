@@ -24,8 +24,6 @@ export default function OAuthSuccessPage() {
             first_name: userSearchParams.get("first_name") || "",
           };
 
-          console.log("Parsed user data:", userData);
-
           // Log the user in with the OAuth data first
           login(token, userData);
 
@@ -38,10 +36,8 @@ export default function OAuthSuccessPage() {
                 Authorization: `Bearer ${token}`,
               },
               withCredentials: true,
-            }
+            },
           );
-
-          console.log("Session setup completed successfully");
 
           // Redirect to dashboard
           router.push("/dashboard");

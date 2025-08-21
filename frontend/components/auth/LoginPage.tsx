@@ -17,8 +17,6 @@ const loginWithGoogle = async () => {
   }
 };
 
-
-
 const LoginPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<"login" | "signup">("login");
   const [isLoading, setIsLoading] = useState(false); // local submit/loading
@@ -38,7 +36,7 @@ const LoginPage: React.FC = () => {
       setError(
         oauthError === "oauth_error"
           ? "Google login failed. Please try again."
-          : "An error occurred during login."
+          : "An error occurred during login.",
       );
     }
   }, [oauthError]);
@@ -96,7 +94,10 @@ const LoginPage: React.FC = () => {
         let errorMessage = "An unknown error occurred";
         if (typeof error.response.data.detail === "string") {
           errorMessage = error.response.data.detail;
-        } else if (typeof error.response.data.detail === "object" && error.response.data.detail.msg) {
+        } else if (
+          typeof error.response.data.detail === "object" &&
+          error.response.data.detail.msg
+        ) {
           errorMessage = error.response.data.detail.msg;
         } else if (typeof error.response.data.detail === "object") {
           // If it's an object, try to stringify it or use a generic message
@@ -139,34 +140,36 @@ const LoginPage: React.FC = () => {
 
       const response = await api.post("/auth/register", signupData);
 
-      setSuccessMessage("Account created successfully! Please check your email for verification.");  
+      setSuccessMessage(
+        "Account created successfully! Please check your email for verification.",
+      );
       setActiveTab("login");
     } catch (error: any) {
       if (error.response) {
-      let errorMessage = "An error occurred during signup";
-      const detail = error.response.data.detail;
-      
-      // Handle array of validation errors (Pydantic format)
-      if (Array.isArray(detail)) {
-        errorMessage = detail.map(err => err.msg).join(", ");
-      } 
-      // Handle string error
-      else if (typeof detail === "string") {
-        errorMessage = detail;
-      } 
-      // Handle object with msg property
-      else if (typeof detail === "object" && detail.msg) {
-        errorMessage = detail.msg;
-      } 
-      // Fallback for other object types
-      else if (typeof detail === "object") {
-        errorMessage = JSON.stringify(detail);
+        let errorMessage = "An error occurred during signup";
+        const detail = error.response.data.detail;
+
+        // Handle array of validation errors (Pydantic format)
+        if (Array.isArray(detail)) {
+          errorMessage = detail.map((err) => err.msg).join(", ");
+        }
+        // Handle string error
+        else if (typeof detail === "string") {
+          errorMessage = detail;
+        }
+        // Handle object with msg property
+        else if (typeof detail === "object" && detail.msg) {
+          errorMessage = detail.msg;
+        }
+        // Fallback for other object types
+        else if (typeof detail === "object") {
+          errorMessage = JSON.stringify(detail);
+        }
+
+        setError(errorMessage);
+      } else {
+        setError("Network error. Please check your connection and try again.");
       }
-      
-      setError(errorMessage);
-    } else {
-      setError("Network error. Please check your connection and try again.");
-    }
     } finally {
       setIsLoading(false);
     }
@@ -213,12 +216,7 @@ const LoginPage: React.FC = () => {
             {/* Logo & Welcome */}
             <div className="text-center mb-8">
               <div className="w-16 h-16 bg-gradient-to-r from-pink-600 to-orange-500 rounded-2xl flex items-center justify-center mx-auto mb-4 animate-float">
-                <Image
-                  src={"/Logo.png"}
-                  height={200}
-                  width={200}
-                  alt="logo"
-                />
+                <Image src={"/Logo.png"} height={200} width={200} alt="logo" />
               </div>
               <h1 className="text-2xl font-bold mb-2">
                 Welcome to{" "}
@@ -254,15 +252,9 @@ const LoginPage: React.FC = () => {
             </div>
 
             {/* Messages */}
-            {error && (
-              <div className="auth-error mb-4">
-                {error}
-              </div>
-            )}
+            {error && <div className="auth-error mb-4">{error}</div>}
             {successMessage && (
-              <div className="auth-success mb-4">
-                {successMessage}
-              </div>
+              <div className="auth-success mb-4">{successMessage}</div>
             )}
 
             {/* Login Form */}

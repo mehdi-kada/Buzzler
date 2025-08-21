@@ -12,7 +12,7 @@ from sqlalchemy import select
 from app.db.database import get_db
 from datetime import datetime, timezone
 
-router = APIRouter()
+router = APIRouter(prefix="/upload")
 
 @router.post("/generate-sas")
 async def generate_sas(

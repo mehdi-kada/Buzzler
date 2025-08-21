@@ -225,11 +225,7 @@
     border-color: rgba(255, 255, 255, 0.2);
   }
 
-  .upload-area:hover,
-  .upload-area.dragover {
-    @apply border-pink-600;
-    background: rgba(220, 38, 103, 0.05);
-  }
+
 
   /* Badges & Tags */
   .support-badge {

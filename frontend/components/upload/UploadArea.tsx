@@ -1,4 +1,4 @@
-"use client"
+"use client";
 import React, { useCallback, useRef, useState } from "react";
 import ProgressBar from "./ProgressBar";
 import { uploadFileComplete } from "../../lib/axios/upload_api_functions";
@@ -17,7 +17,6 @@ import { videoValidationConfig } from "../../types/video_validation";
  * This component has been updated to use CSS classes from globals.css for consistent styling.
  */
 
-
 export default function UploadArea() {
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -31,14 +30,15 @@ export default function UploadArea() {
   const validationConfig: videoValidationConfig = {
     maxSizeInMB: 2000, // 2GB
     maxDurationInSeconds: 3600, // 1 hour
-    allowedFormats: ['mp4', 'mov', 'avi', 'mkv', 'webm'],
+    allowedFormats: ["mp4", "mov", "avi", "mkv", "webm"],
     minWidth: 320,
     minHeight: 240,
     maxWidth: 3840, // 4K
     maxHeight: 2160, // 4K
   };
 
-  const { isValidating, validationResult, validateVideo, resetValidation } = useVideoValidation(validationConfig);
+  const { isValidating, validationResult, validateVideo, resetValidation } =
+    useVideoValidation(validationConfig);
 
   const isUploading = useUploadStore((state) => state.isUploading);
   const setUploading = useUploadStore((state) => state.setUploading);
@@ -51,24 +51,29 @@ export default function UploadArea() {
     resetValidation();
   }, [resetValidation]);
 
-  const handleFiles = useCallback((files: FileList | null) => {
-    if (!files || files.length === 0) return;
-    const first = files[0];
+  const handleFiles = useCallback(
+    (files: FileList | null) => {
+      if (!files || files.length === 0) return;
+      const first = files[0];
 
-    // Validate the video file using our validation hook
-    validateVideo(first).then((result) => {
-      if (result.isValid) {
-        setFile(first);
-      } else {
-        // Show validation errors to the user
-        result.errors.forEach(error => {
-          toast.error(error);
+      // Validate the video file using our validation hook
+      validateVideo(first)
+        .then((result) => {
+          if (result.isValid) {
+            setFile(first);
+          } else {
+            // Show validation errors to the user
+            result.errors.forEach((error) => {
+              toast.error(error);
+            });
+          }
+        })
+        .catch((error) => {
+          toast.error("Failed to validate video file");
         });
-      }
-    }).catch((error) => {
-      toast.error("Failed to validate video file");
-    });
-  }, [validateVideo]);
+    },
+    [validateVideo],
+  );
 
   const onDrop = useCallback(
     (e: React.DragEvent<HTMLDivElement>) => {
@@ -119,7 +124,7 @@ export default function UploadArea() {
 
     // Check if we have a valid validation result
     if (validationResult && !validationResult.isValid) {
-      validationResult.errors.forEach(error => {
+      validationResult.errors.forEach((error) => {
         toast.error(error);
       });
       return;
@@ -159,7 +164,7 @@ export default function UploadArea() {
   }, [resetForm]);
 
   return (
-    <div 
+    <div
       className="w-full"
       onDrop={onDrop}
       onDragOver={onDragOver}
@@ -167,7 +172,7 @@ export default function UploadArea() {
       onDragLeave={onDragLeave}
     >
       <div
-        className={`upload-area p-8 rounded-lg w-full ${isDragging ? 'dragover' : ''}`}
+        className={`upload-area p-8 rounded-lg w-full ${isDragging ? "dragover" : ""}`}
         role="button"
         tabIndex={0}
         onKeyDown={(e) => {
@@ -188,20 +193,20 @@ export default function UploadArea() {
 
         <div className="text-center mb-6">
           <div className="w-16 h-16 bg-gradient-to-r from-pink-600 to-orange-500 rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg className="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
+            <svg
+              className="w-8 h-8 text-white"
+              fill="currentColor"
+              viewBox="0 0 24 24"
+            >
               <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z" />
             </svg>
           </div>
           <div className="text-xl font-semibold text-white mb-2">
-            {isDragging
-              ? "Drop files here to upload"
-              : "Drop your video here"}
+            {isDragging ? "Drop files here to upload" : "Drop your video here"}
           </div>
-          <div className="text-gray-300 mb-6">
-            or click to browse files
-          </div>
-          <button 
-            type="button" 
+          <div className="text-gray-300 mb-6">or click to browse files</div>
+          <button
+            type="button"
             className="btn-primary px-6 py-3 rounded-lg font-semibold"
             onClick={onChooseFile}
             aria-label="Choose a file to upload"
@@ -220,19 +225,13 @@ export default function UploadArea() {
               : "No file selected"}
           </div>
           {isValidating && (
-            <div className="text-sm text-yellow-500">
-              Validating...
-            </div>
+            <div className="text-sm text-yellow-500">Validating...</div>
           )}
           {validationResult && !validationResult.isValid && (
-            <div className="text-sm text-red-500">
-              Validation failed
-            </div>
+            <div className="text-sm text-red-500">Validation failed</div>
           )}
           {validationResult && validationResult.isValid && (
-            <div className="text-sm text-green-500">
-              Valid
-            </div>
+            <div className="text-sm text-green-500">Valid</div>
           )}
           {file && (
             <button
@@ -248,11 +247,10 @@ export default function UploadArea() {
           )}
         </div>
 
-
         <div className="flex justify-end space-x-3 mt-6">
           <button
             type="button"
-            className={`btn-secondary px-6 py-3 rounded-lg font-semibold ${!file || isUploading || isSubmitting || isValidating ? 'opacity-60 cursor-not-allowed' : ''}`}
+            className={`btn-secondary px-6 py-3 rounded-lg font-semibold ${!file || isUploading || isSubmitting || isValidating ? "opacity-60 cursor-not-allowed" : ""}`}
             onClick={handleCancelClick}
             disabled={!file || isUploading || isSubmitting || isValidating}
           >
@@ -261,11 +259,15 @@ export default function UploadArea() {
 
           <button
             type="button"
-            className={`btn-primary px-6 py-3 rounded-lg font-semibold ${!file || isUploading || isSubmitting || isValidating ? 'opacity-60 cursor-not-allowed' : ''}`}
+            className={`btn-primary px-6 py-3 rounded-lg font-semibold ${!file || isUploading || isSubmitting || isValidating ? "opacity-60 cursor-not-allowed" : ""}`}
             onClick={onStartUpload}
             disabled={!file || isUploading || isSubmitting || isValidating}
           >
-            {isSubmitting || isUploading ? "Uploading…" : isValidating ? "Validating…" : "Upload"}
+            {isSubmitting || isUploading
+              ? "Uploading…"
+              : isValidating
+                ? "Validating…"
+                : "Upload"}
           </button>
         </div>
 
