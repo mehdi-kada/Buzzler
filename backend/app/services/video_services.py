@@ -7,6 +7,7 @@ from typing import Any, Dict, Optional, Callable, List, cast
 
 from app.services.azure_storage import AzureUploadService
 from yt_dlp import YoutubeDL
+import threading
 
 
 class StreaminVideoService:
@@ -203,3 +204,69 @@ class StreaminVideoService:
                         process.kill()
                     except Exception:
                         pass
+class ConcurrentStreaminVideoService:
+    """
+    Manages multiple concurrent streaming uploads to Azure Blob Storage.
+    Limits the number of simultaneous uploads to avoid overwhelming resources.
+    """
+    def __init__(self, max_concurrent_uploads: int = 5):
+        self.max_concurrent_uploads = max_concurrent_uploads
+        self.active_uploads = {}
+        self.upload_semaphore = threading.Semaphore(max_concurrent_uploads)
+        
+    def stream_with_concurency_limit(
+        self,
+        task_id: str,
+        url: str,
+        format_selector: str,
+        blob_name: str,
+        progress_callback: Optional[Callable] = None
+    ) -> str:
+        """
+        Stream a video with concurrency control.
+        """
+        if not url or not blob_name:
+            raise ValueError("URL and blob name must be provided")
+        
+        # wrapper to add task_id to progress info
+        def progress_wrapper(info):
+            info['tasl_id'] = task_id
+            progress_callback(info)
+            
+        self.upload_semaphore.acquire()
+        
+        try:
+            self.active_uploads[task_id] = {
+                'status': "processing",
+                'start_time': datetime.utcnow(),
+            }
+            
+            streaming_service = StreaminVideoService()
+            result = streaming_service.stream_download_to_azure(
+                url, format_selector, blob_name, progress_wrapper if progress_callback else None
+            )
+            
+            self.active_uploads[task_id]['status'] = "completed"
+            
+            return result
+        except Exception as e:
+            self.active_uploads[task_id]['status'] = "failed"
+            raise e
+        finally:
+            self.upload_semaphore.release()
+            if task_id in self.active_uploads:
+                del self.active_uploads[task_id]
+                
+    
+    def get_active_uploads(self) -> int:
+        return len ([u for u in self.active_uploads.values() if u['status'] == 'processing'])
+        
+        def cleanup_old_uploads(self, max_age_hours: int = 24):
+            """Clean up old upload records."""
+            cutoff = datetime.now() - timedelta(hours=max_age_hours)
+            self.active_uploads = {
+                k: v for k, v in self.active_uploads.items() 
+                if v['start_time'] > cutoff
+            }
+        
+    
