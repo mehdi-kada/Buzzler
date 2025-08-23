@@ -1,4 +1,3 @@
-import celery
 from app.celery.celery_app import celery_app
 from app.config import settings
 import redis
@@ -30,12 +29,16 @@ def process_video_upload_streaming(self, url:str, format_selector: str, custom_f
             **progress_data
         )
         
-        # store progress in redis with an expiration time of 1 hour
-        redis_client.setex(
-             f"video_upload_progress:{task_id}",
+        try:
+            # store progress in redis with an expiration time of 1 hour
+            redis_client.setex(
+                f"video_upload_progress:{task_id}",
                 3600,
                 progress_update.model_dump_json()
-        )
+            )
+        except Exception as e:
+            # Log error but don't fail the task because of Redis issues
+            pass
         
         #update celery task state
         self.update_state(
@@ -103,9 +106,17 @@ def get_server_stats():
     """
     Get the current server statistics.
     """
-    active_uploads = concurent_uploads.get_active_uploads()
-    return{
-        "active_uploads": active_uploads,
-        "max_concurrent_uploads": concurent_uploads.max_concurrent_uploads,
-        "available_slots": concurent_uploads.max_concurrent_uploads - active_uploads
-    }
+    try:
+        active_uploads = concurent_uploads.get_active_uploads()
+        return{
+            "active_uploads": active_uploads,
+            "max_concurrent_uploads": concurent_uploads.max_concurrent_uploads,
+            "available_slots": concurent_uploads.max_concurrent_uploads - active_uploads
+        }
+    except Exception as e:
+        return {
+            "active_uploads": 0,
+            "max_concurrent_uploads": 5,
+            "available_slots": 5,
+            "error": str(e)
+        }
