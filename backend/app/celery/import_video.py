@@ -97,3 +97,15 @@ def process_video_upload_streaming(self, url:str, format_selector: str, custom_f
 
         # retry with exponential backoff
         self.retry(exc=e, countdown=2 ** self.request.retries)
+        
+@celery_app.task
+def get_server_stats():
+    """
+    Get the current server statistics.
+    """
+    active_uploads = concurent_uploads.get_active_uploads()
+    return{
+        "active_uploads": active_uploads,
+        "max_concurrent_uploads": concurent_uploads.max_concurrent_uploads,
+        "available_slots": concurent_uploads.max_concurrent_uploads - active_uploads
+    }
