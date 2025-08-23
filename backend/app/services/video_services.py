@@ -2,15 +2,17 @@ import subprocess
 import base64
 import uuid
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Any, Dict, Optional, Callable, List, cast
-
+import logging
 from app.services.azure_storage import AzureUploadService
 from yt_dlp import YoutubeDL
 import threading
 
+# Set up logging
+logger = logging.getLogger(__name__)
 
-class StreaminVideoService:
+class StreamingVideoService:
     """
     Service responsible for extracting video metadata via yt-dlp and streaming
     downloads directly into Azure Blob Storage in block-chunks without using local disk.
@@ -204,7 +206,10 @@ class StreaminVideoService:
                         process.kill()
                     except Exception:
                         pass
-class ConcurrentStreaminVideoService:
+                        
+                        
+                        
+class ConcurrentStreamingVideoService:
     """
     Manages multiple concurrent streaming uploads to Azure Blob Storage.
     Limits the number of simultaneous uploads to avoid overwhelming resources.
@@ -214,13 +219,13 @@ class ConcurrentStreaminVideoService:
         self.active_uploads = {}
         self.upload_semaphore = threading.Semaphore(max_concurrent_uploads)
         
-    def stream_with_concurency_limit(
+    def stream_with_concurrency_limit(
         self,
         task_id: str,
         url: str,
         format_selector: str,
         blob_name: str,
-        progress_callback: Optional[Callable] = None
+        progress_callback: Optional[Callable[[Dict[str, Any]], None]] = None
     ) -> str:
         """
         Stream a video with concurrency control.
@@ -230,8 +235,10 @@ class ConcurrentStreaminVideoService:
         
         # wrapper to add task_id to progress info
         def progress_wrapper(info):
-            info['tasl_id'] = task_id
-            progress_callback(info)
+            callback_info = dict(info) if isinstance(info, dict) else {'info': info}
+            callback_info['task_id'] = task_id
+            if progress_callback:
+                progress_callback(callback_info)
             
         self.upload_semaphore.acquire()
         
@@ -241,7 +248,7 @@ class ConcurrentStreaminVideoService:
                 'start_time': datetime.utcnow(),
             }
             
-            streaming_service = StreaminVideoService()
+            streaming_service = StreamingVideoService()
             result = streaming_service.stream_download_to_azure(
                 url, format_selector, blob_name, progress_wrapper if progress_callback else None
             )
@@ -259,14 +266,14 @@ class ConcurrentStreaminVideoService:
                 
     
     def get_active_uploads(self) -> int:
-        return len ([u for u in self.active_uploads.values() if u['status'] == 'processing'])
+        return len([u for u in self.active_uploads.values() if u['status'] == 'processing'])
         
-        def cleanup_old_uploads(self, max_age_hours: int = 24):
-            """Clean up old upload records."""
-            cutoff = datetime.now() - timedelta(hours=max_age_hours)
-            self.active_uploads = {
-                k: v for k, v in self.active_uploads.items() 
-                if v['start_time'] > cutoff
-            }
-        
+    def cleanup_old_uploads(self, max_age_hours: int = 24):
+        """Clean up old upload records."""
+        cutoff = datetime.now() - timedelta(hours=max_age_hours)
+        self.active_uploads = {
+            k: v for k, v in self.active_uploads.items() 
+            if v['start_time'] > cutoff
+        }
+    
     

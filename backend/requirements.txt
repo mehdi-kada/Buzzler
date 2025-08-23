@@ -30,3 +30,4 @@ aiofiles
 azure-storage-blob
 azure-identity
 python-magic
+yt-dlp

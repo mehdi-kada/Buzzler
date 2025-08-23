@@ -61,59 +61,59 @@ class AzureUploadService:
             print(f"Error deleting blob {file_path}: {e}")
             return False
     
-        def upload_stream_in_blocks(
-            self, 
-            blob_name: str, 
-            data_stream: io.BytesIO,
-            progress_callback: Optional[Callable] = None
-        ) -> str:
-            """Upload stream data using Azure's block upload mechanism."""
+    def upload_stream_in_blocks(
+        self, 
+        blob_name: str, 
+        data_stream: io.BytesIO,
+        progress_callback: Optional[Callable] = None
+    ) -> str:
+        """Upload stream data using Azure's block upload mechanism."""
+        
+        blob_client = self.blob_service.get_blob_client(
+            container=self.container_name, 
+            blob=blob_name
+        )
+        
+        block_list = []
+        block_id_counter = 0
+        total_size = 0
+        
+        try:
+            while True:
+                chunk = data_stream.read(self.chunk_size)
+                if not chunk:
+                    break
+                
+                # Create block ID
+                block_id = base64.b64encode(f"{block_id_counter:010d}".encode()).decode()
+                
+                # Stage block
+                blob_client.stage_block(block_id, chunk)
+                block_list.append(block_id)
+                
+                block_id_counter += 1
+                total_size += len(chunk)
+                
+                if progress_callback:
+                    progress_callback({
+                        'uploaded_bytes': total_size,
+                        'chunk_size': len(chunk),
+                        'blocks_uploaded': len(block_list)
+                    })
             
-            blob_client = self.blob_service_client.get_blob_client(
-                container=self.container_name, 
-                blob=blob_name
-            )
+            # Commit all blocks
+            if block_list:
+                blob_client.commit_block_list(block_list)
             
-            block_list = []
-            block_id_counter = 0
-            total_size = 0
+            return blob_name
             
+        except AzureError as e:
+            # Clean up any staged blocks
             try:
-                while True:
-                    chunk = data_stream.read(self.chunk_size)
-                    if not chunk:
-                        break
-                    
-                    # Create block ID
-                    block_id = base64.b64encode(f"{block_id_counter:010d}".encode()).decode()
-                    
-                    # Stage block
-                    blob_client.stage_block(block_id, chunk)
-                    block_list.append(block_id)
-                    
-                    block_id_counter += 1
-                    total_size += len(chunk)
-                    
-                    if progress_callback:
-                        progress_callback({
-                            'uploaded_bytes': total_size,
-                            'chunk_size': len(chunk),
-                            'blocks_uploaded': len(block_list)
-                        })
-                
-                # Commit all blocks
-                if block_list:
-                    blob_client.commit_block_list(block_list)
-                
-                return blob_name
-                
-            except AzureError as e:
-                # Clean up any staged blocks
-                try:
-                    blob_client.delete_blob()
-                except:
-                    pass
-                raise Exception(f"Azure upload failed: {str(e)}")
+                blob_client.delete_blob()
+            except:
+                pass
+            raise Exception(f"Azure upload failed: {str(e)}")
 
     def blob_exists(self, file_path: str) -> bool:
         try:

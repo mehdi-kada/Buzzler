@@ -151,7 +151,6 @@ export const uploadFileComplete = async (
   try {
     useUploadStore.getState().setUploading(true, file.name, fileId);
 
-    // Step 1: Get SAS URL and video ID from backend
     const { sasUrl, filePath, videoId } = await getAzureSasUrl(
       file.name,
       file.size,
@@ -163,10 +162,8 @@ export const uploadFileComplete = async (
       videoId,
     });
 
-    // Step 2: Upload file to Azure
     await uploadFileToAzure(sasUrl, file, fileId, onProgress);
 
-    // Step 3: Notify backend that upload is complete
     const azureBlobUrl = sasUrl.split("?")[0];
     const result = await sendUploadInfoToBackend(
       file.name,
@@ -178,7 +175,6 @@ export const uploadFileComplete = async (
     // Mark completed in store to keep progress at 100% and allow UI to reflect completion
     try {
       const store = useUploadStore.getState();
-      // Ensure progress is at 100%
       store.setProgress(100);
       // If the store supports a completion flag, set it (optional, backward compatible)
       if (typeof (store as any).setCompleted === "function") {

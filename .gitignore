@@ -1,25 +1,49 @@
-# Ignore python venv
-backend/venv/
+# -----------------------------
+# Recommended .gitignore for Buzzler
+# -----------------------------
+
+# Environment files
+# - keep a template like .env.example in the repo; ignore actual secrets
 .env
+.env.*
 
+# Python virtual envs
+# (backend's venv is .venv in pyrightconfig; also ignore common names)
+/.venv/
+venv/
+env/
+backend/.venv/
+backend/venv/
 
-# byte-compiled / cache files
-backend/app/__pycache__/
-backend/*.pyc
-**/__pycache__/
-**/*.py[cod]
+# Byte-compiled / cache files
+__pycache__/
+*.py[cod]
+*$py.class
 
-# docker files
-**/db-data/
+# Backend specific caches/logs
+backend/**/__pycache__/
+backend/**/cache/
+backend/database.log
+backend/cookies.txt
 
+# Packaging / dependency metadata
+# Track project lockfiles; ignore python-specific build artifacts
+*.egg-info/
+dist/
+build/
+pip-wheel-metadata/
 
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
-
-# dependencies
+# Node & frontend
 node_modules/
 frontend/node_modules/
-/node_modules
-/.pnp
+
+# Next.js build output
+/.next/
+frontend/.next/
+out/
+
+# Yarn / pnpm caches (keep locks committed)
+.pnp
 .pnp.*
 .yarn/*
 !.yarn/patches
@@ -28,70 +52,40 @@ frontend/node_modules/
 !.yarn/versions
 .pnpm-store/
 
-# testing
-/coverage
+# Keep lockfiles in repo (helps reproducible installs)
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+frontend/pnpm-lock.yaml
 
-# next.js
-/.next/
-/out/
-
-# production
-/build
-
-# misc
-.DS_Store
-*.pem
-
-# debug
+# Logs
+*.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
-.env*
+# Editor/project settings
+.vscode/
+.idea/
 
-# vercel
+# OS files
+.DS_Store
+
+# Vercel/hosting
 .vercel
 
-# typescript
+# TypeScript
 *.tsbuildinfo
 next-env.d.ts
 
-# Ignore all cache folders inside backend and its subfolders
-backend/**/__pycache__/
-backend/app/*/__pycache__
-backend/**/cache/
-backend/**/Cache/
+# Blob / uploaded files - don't commit uploads or big binary blobs
+__blobstorage__/
+frontend/design/
 
-# Ignore all markdown files
-*.md
-backend/**/*.md
+# Keep markdown/docs in repo — do NOT ignore *.md; they are project docs
 
-frontend/node_modules/
-frontend/.next/
-frontend/.pnp
-frontend/.pnp.*
-frontend/.yarn/*
-!frontend/.yarn/patches
-!frontend/.yarn/plugins
-!frontend/.yarn/releases
-!frontend/.yarn/versions
-frontend/coverage
-frontend/.out/
-frontend/build
-frontend/.DS_Store
-frontend/npm-debug.log*
-frontend/yarn-debug.log*
-frontend/yarn-error.log*
-frontend/.pnpm-debug.log*
-frontend/.env*
-frontend/.vercel
-frontend/*.tsbuildinfo
-frontend/next-env.d.ts
-frontend/pnpm-lock.yaml
-backend/app/__pycache__/main.cpython-311.pyc
-backend/app/__pycache__/main.cpython-311.pyc
-frontend/design
+# Other: ignore compiled Python artifacts for specific python versions
+**/__pycache__/
+
 markdown
-backend/database.log
