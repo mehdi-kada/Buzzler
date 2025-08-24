@@ -1,12 +1,12 @@
 from typing import Optional
 from fastapi import APIRouter, HTTPException,status
-
 from app.celery.import_tasks import get_server_stats, process_video_upload_streaming, redis_client
 from app.models.enums import VideoStatus
 from app.schemas.schema_import_video import VideoProgressUpdate, VideoUploadResponse
 
 
-router = APIRouter(prefix="/import", tags=["videos"])
+router = APIRouter(prefix="/import")
+
 
 @router.post("/import-video", response_model=VideoUploadResponse)
 async def import_video(url: str, format_selector: str, custom_filename: Optional[str] = None):
@@ -27,15 +27,15 @@ async def import_video(url: str, format_selector: str, custom_filename: Optional
             detail=f"Failed to start video streaming: {str(e)}"
         )
 
-@router.get("/import-status")
+@router.get("/server-stats")
 async def get_import_status():
     """
-        checks the status of the server
+        checks the stats of the server (number of empty slots, number of active tasks, etc.)
     """
     try:
         stats = get_server_stats.delay()
         result = stats.get(timeout=5)
-        return {"status": result}
+        return {"server_stats": result}
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -58,7 +58,7 @@ async def get_task_status(task_id: str):
             if task_result.state == "PENDING":
                 return VideoProgressUpdate(
                     task_id=task_id,
-                    status=VideoStatus.UPLOADING,
+                    status=VideoStatus.PENDING_UPLOAD,
                     progress_percentage=0,
                     uploaded_bytes=0,
                     current_step="queued",

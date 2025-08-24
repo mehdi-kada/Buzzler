@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.core.auth.auth_endpoints import router as auth_router
 from app.api.endpoints.users.user_endpoints import router as users_router
 from app.api.endpoints.video.upload_video import router as upload_video_router
+from app.api.endpoints.video.import_video import router as import_video_router 
 from app.core.security.headers_middleware import SecurityHeadersMiddleware
 from app.core.security.csrf_middleware import CSRFMiddleware
 
@@ -25,4 +26,5 @@ app.add_middleware(
 app.include_router(auth_router, prefix="/auth", tags=["Auth"])
 app.include_router(users_router, tags=["Users"])
 app.include_router(upload_video_router, tags=["Video"])
+app.include_router(import_video_router, tags=["Video"])
 
