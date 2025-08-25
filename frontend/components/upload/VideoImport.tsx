@@ -15,7 +15,6 @@ export default function VideoImport({
   onImportError
 }: VideoImportProps) {
   const [url, setUrl] = useState('');
-  const [isImporting, setIsImporting] = useState(false);
 
   const handleImport = async () => {
     if (!url.trim()) {
@@ -31,30 +30,21 @@ export default function VideoImport({
       return;
     }
 
-    setIsImporting(true);
     onImportStart?.();
 
     try {
-      // TODO: Replace with actual API call
-      // const response = await importVideoFromUrl(url);
-
-      // Simulate API call for now
-      await new Promise(resolve => setTimeout(resolve, 2000));
-
-      toast.success('Video imported successfully!');
+      // Pass the URL to the parent component to handle the actual import
       onImportSuccess?.({ url });
       setUrl('');
     } catch (error) {
       const errorMessage = 'Failed to import video. Please check the URL and try again.';
       toast.error(errorMessage);
       onImportError?.(errorMessage);
-    } finally {
-      setIsImporting(false);
     }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !isImporting) {
+    if (e.key === 'Enter') {
       handleImport();
     }
   };
@@ -71,41 +61,18 @@ export default function VideoImport({
           value={url}
           onChange={(e) => setUrl(e.target.value)}
           onKeyPress={handleKeyPress}
-          disabled={isImporting}
         />
       </div>
 
-      {/* Supported Platforms */}
-      <div className="mb-6">
-        <p className="text-sm text-gray-300 mb-3">Supported platforms:</p>
-        <div className="grid grid-cols-4 gap-3">
-          <div className="platform-icon p-3 rounded-lg text-center">
-            <span className="text-red-500 text-2xl">📺</span>
-            <p className="text-xs mt-1">YouTube</p>
-          </div>
-          <div className="platform-icon p-3 rounded-lg text-center">
-            <span className="text-blue-500 text-2xl">🎵</span>
-            <p className="text-xs mt-1">Vimeo</p>
-          </div>
-          <div className="platform-icon p-3 rounded-lg text-center">
-            <span className="text-purple-500 text-2xl">🎮</span>
-            <p className="text-xs mt-1">Twitch</p>
-          </div>
-          <div className="platform-icon p-3 rounded-lg text-center">
-            <span className="text-blue-600 text-2xl">👥</span>
-            <p className="text-xs mt-1">Facebook</p>
-          </div>
-        </div>
-      </div>
 
       <button
         className={`btn-primary px-6 py-3 rounded-lg font-semibold ${
-          isImporting || !url.trim() ? 'opacity-60 cursor-not-allowed' : ''
+          !url.trim() ? 'opacity-60 cursor-not-allowed' : ''
         }`}
         onClick={handleImport}
-        disabled={isImporting || !url.trim()}
+        disabled={!url.trim()}
       >
-        {isImporting ? 'Importing...' : 'Import Video'}
+        Import Video
       </button>
     </div>
   );

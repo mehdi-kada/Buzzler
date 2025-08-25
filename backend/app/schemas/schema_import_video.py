@@ -3,7 +3,6 @@ from pydantic import BaseModel, HttpUrl
 from typing import Optional, Dict, Any
 
 
-
 class VideoUploadRequest(BaseModel):
     url: HttpUrl
     format_selector: str = "bestvideo+bestaudio/best"
@@ -16,7 +15,7 @@ class VideoUploadResponse(BaseModel):
     
 class VideoProgressUpdate(BaseModel):
     task_id: str
-    status: VideoStatus
+    status: str  # Changed from VideoStatus to str to avoid serialization issues
     progress_percentage: float
     uploaded_bytes: int
     total_bytes: Optional[int] = None

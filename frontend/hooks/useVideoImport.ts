@@ -39,9 +39,29 @@ export const useVideoImport = (): UseVideoImportReturn => {
         setUploading(true);
         await refreshServerStats();
       } catch (err: any) {
-        const errorMessage =
-          err?.response?.data?.detail ||
-          "Error importing video. Please check the URL and try again.";
+        let errorMessage = "Error importing video. Please check the URL and try again.";
+        
+        // Handle different error response formats
+        if (err?.response?.data?.detail) {
+          const detail = err.response.data.detail;
+          if (typeof detail === 'string') {
+            errorMessage = detail;
+          } else if (typeof detail === 'object') {
+            // Handle validation error objects with {type, loc, msg, input} structure
+            if (detail.msg) {
+              errorMessage = detail.msg;
+            } else if (Array.isArray(detail)) {
+              // Handle array of validation errors
+              errorMessage = detail.map((error: any) => 
+                error.msg || JSON.stringify(error)
+              ).join(', ');
+            } else {
+              // Fallback for other object structures
+              errorMessage = JSON.stringify(detail);
+            }
+          }
+        }
+        
         setErrData(errorMessage);
         setUploading(false);
         console.log(err);
@@ -71,9 +91,31 @@ export const useVideoImport = (): UseVideoImportReturn => {
           }
         }
       } catch (err: any) {
-        const errorMessage =
-          err?.response?.data?.detail ||
-          (err instanceof Error ? err.message : "Failed to fetch progress");
+        let errorMessage = "Failed to fetch progress";
+        
+        // Handle different error response formats
+        if (err?.response?.data?.detail) {
+          const detail = err.response.data.detail;
+          if (typeof detail === 'string') {
+            errorMessage = detail;
+          } else if (typeof detail === 'object') {
+            // Handle validation error objects with {type, loc, msg, input} structure
+            if (detail.msg) {
+              errorMessage = detail.msg;
+            } else if (Array.isArray(detail)) {
+              // Handle array of validation errors
+              errorMessage = detail.map((error: any) => 
+                error.msg || JSON.stringify(error)
+              ).join(', ');
+            } else {
+              // Fallback for other object structures
+              errorMessage = JSON.stringify(detail);
+            }
+          }
+        } else if (err instanceof Error) {
+          errorMessage = err.message;
+        }
+        
         setErrData(errorMessage);
         setUploading(false);
       }

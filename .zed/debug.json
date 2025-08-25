@@ -1,0 +1,15 @@
+[
+  {
+    "label": "Attach to FastAPI in Docker",
+    "adapter": "Debugpy",
+    "request": "attach",
+    "host": "localhost",
+    "port": 5678,
+    "pathMappings": [
+      {
+        "localRoot": "${workspaceFolder}/backend",
+        "remoteRoot": "/app"
+      }
+    ]
+  }
+]
