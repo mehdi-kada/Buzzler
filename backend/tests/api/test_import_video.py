@@ -15,7 +15,6 @@ class TestImportVideo:
         # Use the same example URL as other tests to keep expectations consistent
         response = client.post("/import/import-video", params={
             "url": "https://youtu.be/rnp4-RoRxSo?si=7ZhiDurVKo5E4iDQ",
-            "format_selector": "best"
         })
 
         assert response.status_code == 200
@@ -24,20 +23,19 @@ class TestImportVideo:
         assert data["status"] == VideoStatus.UPLOADING
         assert data["message"] == "Video import has been initiated."
         mock_celery_task.delay.assert_called_once_with(
-            "https://example.com/video.mp4", "best", None
+            "https://example.com/video.mp4", "bestvideo[height>=720][ext=mp4]+bestaudio[ext=m4a]/best[height>=720][ext=mp4]/best[ext=mp4]/best", None
         )
 
     def test_import_video_with_custom_filename(self, mock_celery_task):
         """Test video import with custom filename."""
         response = client.post("/import/import-video", params={
             "url": "https://example.com/video.mp4",
-            "format_selector": "best",
             "custom_filename": "my_video"
         })
 
         assert response.status_code == 200
         mock_celery_task.delay.assert_called_once_with(
-            "https://example.com/video.mp4", "best", "my_video"
+            "https://example.com/video.mp4", "bestvideo[height>=720][ext=mp4]+bestaudio[ext=m4a]/best[height>=720][ext=mp4]/best[ext=mp4]/best", "my_video"
         )
 
     def test_import_video_server_error(self):
@@ -47,7 +45,6 @@ class TestImportVideo:
 
             response = client.post("/import/import-video", params={
                 "url": "https://example.com/video.mp4",
-                "format_selector": "best"
             })
 
             assert response.status_code == 500

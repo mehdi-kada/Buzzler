@@ -45,8 +45,8 @@ celery_app.conf.update(
         task_acks_late=True,
     worker_max_tasks_per_child=100,
     
-    task_soft_time_limit=300,  # 5 minutes
-    task_time_limit=600,  # 10 minutes
+    task_soft_time_limit=1800,  # 5 minutes
+    task_time_limit=3600,  # 10 minutes
     
     beat_schedule={
         'cleanup_temp_files': {

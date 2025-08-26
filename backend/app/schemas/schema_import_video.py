@@ -5,7 +5,6 @@ from typing import Optional, Dict, Any
 
 class VideoUploadRequest(BaseModel):
     url: HttpUrl
-    format_selector: str = "bestvideo+bestaudio/best"
     custom_file_name: Optional[str] = None
     
 class VideoUploadResponse(BaseModel):

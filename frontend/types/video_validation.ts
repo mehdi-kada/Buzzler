@@ -58,7 +58,6 @@ export interface UseVideoImportReturn {
   progressData: VideoProgressUpdate | null;
   importVideo: (
     url: string,
-    format_selector?: string,
     custom_filename?: string,
   ) => Promise<void>;
   refreshServerStats: () => Promise<void>;

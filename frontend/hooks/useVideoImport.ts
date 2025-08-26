@@ -25,13 +25,11 @@ export const useVideoImport = (): UseVideoImportReturn => {
   const importVideo = useCallback(
     async (
       url: string,
-      format_selector: string = "best[ext=mp4]/best[height<=720]",
       custom_filename?: string,
     ) => {
       try {
         const { data } = await api.post("/import/import-video", {
           url,
-          format_selector,
           custom_filename,
         });
 

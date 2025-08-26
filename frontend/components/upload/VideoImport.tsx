@@ -2,9 +2,11 @@
 
 import React, { useState } from 'react';
 import { toast } from 'sonner';
+import api from '@/lib/axios/auth_interceptor';
+import { VideoProgressUpdate } from '@/types/video_validation';
 
 type VideoImportProps = {
-  onImportStart?: () => void;
+  onImportStart?: (taskId: string) => void;
   onImportSuccess?: (videoData: any) => void;
   onImportError?: (error: string) => void;
 };
@@ -15,6 +17,7 @@ export default function VideoImport({
   onImportError
 }: VideoImportProps) {
   const [url, setUrl] = useState('');
+  const [isImporting, setIsImporting] = useState(false);
 
   const handleImport = async () => {
     if (!url.trim()) {
@@ -30,21 +33,53 @@ export default function VideoImport({
       return;
     }
 
-    onImportStart?.();
-
+    setIsImporting(true);
+    
     try {
-      // Pass the URL to the parent component to handle the actual import
-      onImportSuccess?.({ url });
-      setUrl('');
-    } catch (error) {
-      const errorMessage = 'Failed to import video. Please check the URL and try again.';
+      // Call the backend API to start the import process
+      const response = await api.post('/import/import-video', {
+        url: url,
+        custom_file_name: null,
+      });
+
+      const { task_id, status, message } = response.data;
+      
+      // Notify parent component that import has started
+      onImportStart?.(task_id);
+      
+      toast.success(message || 'Video import started successfully!');
+    } catch (error: any) {
+      let errorMessage = 'Failed to import video. Please check the URL and try again.';
+      
+      // Handle different error response formats
+      if (error?.response?.data?.detail) {
+        const detail = error.response.data.detail;
+        if (typeof detail === 'string') {
+          errorMessage = detail;
+        } else if (typeof detail === 'object') {
+          if (detail.msg) {
+            errorMessage = detail.msg;
+          } else if (Array.isArray(detail)) {
+            errorMessage = detail.map((error: any) => 
+              error.msg || JSON.stringify(error)
+            ).join(', ');
+          } else {
+            errorMessage = JSON.stringify(detail);
+          }
+        }
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      
       toast.error(errorMessage);
       onImportError?.(errorMessage);
+    } finally {
+      setIsImporting(false);
     }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
+    if (e.key === 'Enter' && !isImporting) {
       handleImport();
     }
   };
@@ -61,18 +96,18 @@ export default function VideoImport({
           value={url}
           onChange={(e) => setUrl(e.target.value)}
           onKeyPress={handleKeyPress}
+          disabled={isImporting}
         />
       </div>
 
-
       <button
         className={`btn-primary px-6 py-3 rounded-lg font-semibold ${
-          !url.trim() ? 'opacity-60 cursor-not-allowed' : ''
+          isImporting || !url.trim() ? 'opacity-60 cursor-not-allowed' : ''
         }`}
         onClick={handleImport}
-        disabled={!url.trim()}
+        disabled={isImporting || !url.trim()}
       >
-        Import Video
+        {isImporting ? 'Importing...' : 'Import Video'}
       </button>
     </div>
   );

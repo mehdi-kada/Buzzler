@@ -1,10 +1,10 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import UploadArea from "@/components/upload/UploadArea";
 import VideoImport from "@/components/upload/VideoImport";
 import ProjectSettings from "@/components/upload/ProjectSettings";
-import { useVideoImport } from "@/hooks/useVideoImport";
+import api from "@/lib/axios/auth_interceptor";
 import { VideoProgressUpdate } from "@/types/video_validation";
 import { toast } from "sonner";
 
@@ -19,34 +19,92 @@ export default function NewUploadVideoPage() {
     hashtags: true,
   });
   
-  const { 
-    importVideo, 
-    uploading, 
-    progressData, 
-    errData, 
-    reset 
-  } = useVideoImport();
+  const [taskId, setTaskId] = useState<string | null>(null);
+  const [isImporting, setIsImporting] = useState(false);
+  const [progressData, setProgressData] = useState<VideoProgressUpdate | null>(null);
+  const [errData, setErrData] = useState<string | null>(null);
   
-  const handleImportStart = () => {
-    // Reset any previous errors
-    if (errData) {
-      reset();
-    }
+  // Handle import start
+  const handleImportStart = (newTaskId: string) => {
+    setTaskId(newTaskId);
+    setIsImporting(true);
+    setProgressData(null);
+    setErrData(null);
   };
   
-  const handleImportSuccess = (videoData: any) => {
-    toast.success("Video import started successfully!");
-    // You can add additional logic here when import starts
-  };
-  
+  // Handle import error
   const handleImportError = (error: string) => {
-    toast.error(error);
+    setErrData(error);
+    setIsImporting(false);
   };
   
-  // We'll create a new component for the progress display
-  const VideoImportProgress = ({ progress }: { progress: VideoProgressUpdate }) => {
+  // Reset the import process
+  const resetImport = () => {
+    setTaskId(null);
+    setIsImporting(false);
+    setProgressData(null);
+    setErrData(null);
+  };
+  
+  // Poll for progress updates
+  useEffect(() => {
+    if (!taskId || !isImporting) return;
+    
+    const fetchProgress = async () => {
+      try {
+        const response = await api.get(`/import/task-status/${taskId}`);
+        const data: VideoProgressUpdate = response.data;
+        setProgressData(data);
+        
+        // Check if the task is completed or failed
+        if (data.status === "failed") {
+          setErrData(data.error_message || "Upload failed");
+          setIsImporting(false);
+        } else if (data.status === "ready") {
+          // Keep the progress bar visible but show completion
+          toast.success("Video import completed successfully!");
+        }
+      } catch (error: any) {
+        let errorMessage = "Failed to fetch progress";
+        
+        // Handle different error response formats
+        if (error?.response?.data?.detail) {
+          const detail = error.response.data.detail;
+          if (typeof detail === 'string') {
+            errorMessage = detail;
+          } else if (typeof detail === 'object') {
+            if (detail.msg) {
+              errorMessage = detail.msg;
+            } else if (Array.isArray(detail)) {
+              errorMessage = detail.map((error: any) => 
+                error.msg || JSON.stringify(error)
+              ).join(', ');
+            } else {
+              errorMessage = JSON.stringify(detail);
+            }
+          }
+        } else if (error instanceof Error) {
+          errorMessage = error.message;
+        }
+        
+        setErrData(errorMessage);
+        setIsImporting(false);
+      }
+    };
+    
+    // Poll every 2 seconds
+    const interval = setInterval(fetchProgress, 2000);
+    fetchProgress(); // Initial call
+    
+    return () => clearInterval(interval);
+  }, [taskId, isImporting]);
+  
+  // Progress display component
+  const VideoImportProgress = () => {
+    if (!progressData) return null;
+    
     const getStatusText = () => {
-      switch (progress.status) {
+      switch (progressData.status) {
         case "pending_upload":
           return "Preparing upload...";
         case "uploading":
@@ -67,7 +125,13 @@ export default function NewUploadVideoPage() {
     };
     
     const statusText = getStatusText();
-    const progressPercentage = progress.progressPercentage || 0;
+    // When status is "ready", show 100% progress
+    const progressPercentage = progressData.status === "ready" 
+      ? 100 
+      : progressData.progress_percentage || 0;
+    
+    // Show checkmark when task is completed
+    const showCheckmark = progressData.status === "ready";
     
     return (
       <div className="form-input p-6 rounded-2xl">
@@ -75,8 +139,25 @@ export default function NewUploadVideoPage() {
         
         <div className="mb-4">
           <div className="flex justify-between text-sm mb-1">
-            <span>{statusText}</span>
-            <span>{progressPercentage}%</span>
+            <div className="flex items-center">
+              <span>{statusText}</span>
+              {showCheckmark && (
+                <svg 
+                  className="ml-2 text-green-500 w-5 h-5" 
+                  fill="none" 
+                  stroke="currentColor" 
+                  viewBox="0 0 24 24"
+                >
+                  <path 
+                    strokeLinecap="round" 
+                    strokeLinejoin="round" 
+                    strokeWidth="2" 
+                    d="M5 13l4 4L19 7"
+                  />
+                </svg>
+              )}
+            </div>
+            <span>{Math.round(progressPercentage)}%</span>
           </div>
           <div className="progress-bar h-2 rounded-full overflow-hidden">
             <div 
@@ -86,21 +167,27 @@ export default function NewUploadVideoPage() {
           </div>
         </div>
         
-        {progress.message && (
+        {progressData.message && (
           <div className="text-sm text-gray-300 mb-4">
-            {progress.message}
+            {progressData.message}
           </div>
         )}
         
-        {progress.status === "failed" && errData && (
+        {progressData.status === "failed" && errData && (
           <div className="text-sm text-red-400 mb-4">
             {errData}
           </div>
         )}
         
+        {progressData.status === "ready" && (
+          <div className="text-sm text-green-400 mb-4">
+            Video import completed successfully!
+          </div>
+        )}
+        
         <button
           className="btn-secondary px-4 py-2 rounded-lg font-medium"
-          onClick={reset}
+          onClick={resetImport}
         >
           Import Another Video
         </button>
@@ -108,144 +195,23 @@ export default function NewUploadVideoPage() {
     );
   };
   
-  // Create a wrapper component that uses the hook
-  const VideoImportWithHook = () => {
-    const [url, setUrl] = useState("");
+  // Error display component
+  const VideoImportError = () => {
+    if (!errData || isImporting) return null;
     
-    const handleImport = async () => {
-      if (!url.trim()) {
-        toast.error("Please enter a valid URL");
-        return;
-      }
-      
-      try {
-        new URL(url);
-      } catch {
-        toast.error("Please enter a valid URL");
-        return;
-      }
-      
-      handleImportStart();
-      await importVideo(url);
-    };
-    
-    const handleKeyPress = (e: React.KeyboardEvent) => {
-      if (e.key === "Enter" && !uploading) {
-        handleImport();
-      }
-    };
-    
-    // Show progress if we're uploading
-    if (uploading && progressData) {
-      return <VideoImportProgress progress={progressData} />;
-    }
-    
-    // Show error if there was one
-    if (errData && !uploading) {
-      return (
-        <div className="form-input p-6 rounded-2xl">
-          <h3 className="text-xl font-semibold mb-4">Import from URL</h3>
-          
-          <div className="mb-6">
-            <input
-              type="url"
-              className="form-input w-full px-4 py-3 rounded-lg"
-              placeholder="https://youtube.com/watch?v=..."
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              onKeyPress={handleKeyPress}
-              disabled={uploading}
-            />
-          </div>
-          
-          {/* Supported Platforms */}
-          <div className="mb-6">
-            <p className="text-sm text-gray-300 mb-3">Supported platforms:</p>
-            <div className="grid grid-cols-4 gap-3">
-              <div className="platform-icon p-3 rounded-lg text-center">
-                <span className="text-red-500 text-2xl">📺</span>
-                <p className="text-xs mt-1">YouTube</p>
-              </div>
-              <div className="platform-icon p-3 rounded-lg text-center">
-                <span className="text-blue-500 text-2xl">🎵</span>
-                <p className="text-xs mt-1">Vimeo</p>
-              </div>
-              <div className="platform-icon p-3 rounded-lg text-center">
-                <span className="text-purple-500 text-2xl">🎮</span>
-                <p className="text-xs mt-1">Twitch</p>
-              </div>
-              <div className="platform-icon p-3 rounded-lg text-center">
-                <span className="text-blue-600 text-2xl">👥</span>
-                <p className="text-xs mt-1">Facebook</p>
-              </div>
-            </div>
-          </div>
-          
-          <div className="text-sm text-red-400 mb-4">
-            {typeof errData === 'string' ? errData : JSON.stringify(errData)}
-          </div>
-          
-          <button
-            className={`btn-primary px-6 py-3 rounded-lg font-semibold ${
-              uploading || !url.trim() ? "opacity-60 cursor-not-allowed" : ""
-            }`}
-            onClick={handleImport}
-            disabled={uploading || !url.trim()}
-          >
-            {uploading ? "Importing..." : "Import Video"}
-          </button>
-        </div>
-      );
-    }
-    
-    // Show the regular import form
     return (
       <div className="form-input p-6 rounded-2xl">
         <h3 className="text-xl font-semibold mb-4">Import from URL</h3>
         
-        <div className="mb-6">
-          <input
-            type="url"
-            className="form-input w-full px-4 py-3 rounded-lg"
-            placeholder="https://youtube.com/watch?v=..."
-            value={url}
-            onChange={(e) => setUrl(e.target.value)}
-            onKeyPress={handleKeyPress}
-            disabled={uploading}
-          />
-        </div>
-        
-        {/* Supported Platforms */}
-        <div className="mb-6">
-          <p className="text-sm text-gray-300 mb-3">Supported platforms:</p>
-          <div className="grid grid-cols-4 gap-3">
-            <div className="platform-icon p-3 rounded-lg text-center">
-              <span className="text-red-500 text-2xl">📺</span>
-              <p className="text-xs mt-1">YouTube</p>
-            </div>
-            <div className="platform-icon p-3 rounded-lg text-center">
-              <span className="text-blue-500 text-2xl">🎵</span>
-              <p className="text-xs mt-1">Vimeo</p>
-            </div>
-            <div className="platform-icon p-3 rounded-lg text-center">
-              <span className="text-purple-500 text-2xl">🎮</span>
-              <p className="text-xs mt-1">Twitch</p>
-            </div>
-            <div className="platform-icon p-3 rounded-lg text-center">
-              <span className="text-blue-600 text-2xl">👥</span>
-              <p className="text-xs mt-1">Facebook</p>
-            </div>
-          </div>
+        <div className="text-sm text-red-400 mb-4">
+          {errData}
         </div>
         
         <button
-          className={`btn-primary px-6 py-3 rounded-lg font-semibold ${
-            uploading || !url.trim() ? "opacity-60 cursor-not-allowed" : ""
-          }`}
-          onClick={handleImport}
-          disabled={uploading || !url.trim()}
+          className="btn-secondary px-4 py-2 rounded-lg font-medium"
+          onClick={resetImport}
         >
-          {uploading ? "Importing..." : "Import Video"}
+          Try Again
         </button>
       </div>
     );
@@ -311,7 +277,16 @@ export default function NewUploadVideoPage() {
 
           {/* URL Import Section */}
           <div className={`mb-8 ${activeTab !== "url" ? "hidden" : ""}`}>
-            <VideoImportWithHook />
+            {isImporting ? (
+              <VideoImportProgress />
+            ) : errData ? (
+              <VideoImportError />
+            ) : (
+              <VideoImport 
+                onImportStart={handleImportStart}
+                onImportError={handleImportError}
+              />
+            )}
           </div>
 
           {/* Project Settings */}

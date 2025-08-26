@@ -1,29 +1,32 @@
 from typing import Optional
 import asyncio
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, status, Body
 from app.celery.import_tasks import get_server_stats, process_video_upload_streaming, redis_client
 from app.models.enums import VideoStatus
-from app.schemas.schema_import_video import VideoProgressUpdate, VideoUploadResponse
+from app.schemas.schema_import_video import VideoProgressUpdate, VideoUploadResponse, VideoUploadRequest
 
 
 router = APIRouter(prefix="/import")
 
 
 @router.post("/import-video", response_model=VideoUploadResponse)
-async def import_video(url: str, format_selector: str, custom_filename: Optional[str] = None):
+async def import_video(video_request: VideoUploadRequest):
     """
         orchestrates celery to import video directly to azure
     """
+    url = str(video_request.url)  # Convert HttpUrl to string
+    custom_filename = video_request.custom_file_name
+    
     try:
         print("the task is about to start : ")
-        task = process_video_upload_streaming.delay(url, format_selector, custom_filename)
+        task = process_video_upload_streaming.delay(url, custom_filename)
         print(f"the task is : {task}")
         print(f"task id: {task.id}")
         return VideoUploadResponse(
-        task_id=task.id,
-        status=VideoStatus.UPLOADING,
-        message="Video import has been initiated."
-    )
+            task_id=task.id,
+            status=VideoStatus.UPLOADING,
+            message="Video import has been initiated."
+        )
     except Exception as e:
         print(f"Failed to start video streaming: {str(e)}")
         raise HTTPException(

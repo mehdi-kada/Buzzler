@@ -73,7 +73,6 @@ class StreamingVideoService:
     def stream_download_to_azure(
         self,
         url: str,
-        format_selector: str,
         blob_name: str,
         progress_callback: Optional[Callable[[Dict[str, Any]], None]] = None,
     ) -> str:
@@ -99,13 +98,15 @@ class StreamingVideoService:
         cmd = [
             "yt-dlp",
             "--format",
-            format_selector,
+            "bestvideo*[height=1080]+bestaudio/best[height=1080]/bestvideo*[height<=1080][height>=720]+bestaudio/best[height<=1080][height>=720]",
             "--output",
             "-",  # stdout
             "--quiet",
             "--no-warnings",
             url,
         ]
+
+
 
         process = None
         try:
@@ -206,9 +207,9 @@ class StreamingVideoService:
                         process.kill()
                     except Exception:
                         pass
-                        
-                        
-                        
+
+
+
 class ConcurrentStreamingVideoService:
     """
     Manages multiple concurrent streaming uploads to Azure Blob Storage.
@@ -218,12 +219,11 @@ class ConcurrentStreamingVideoService:
         self.max_concurrent_uploads = max_concurrent_uploads
         self.active_uploads = {}
         self.upload_semaphore = threading.Semaphore(max_concurrent_uploads)
-        
+
     def stream_with_concurrency_limit(
         self,
         task_id: str,
         url: str,
-        format_selector: str,
         blob_name: str,
         progress_callback: Optional[Callable[[Dict[str, Any]], None]] = None
     ) -> str:
@@ -232,29 +232,32 @@ class ConcurrentStreamingVideoService:
         """
         if not url or not blob_name:
             raise ValueError("URL and blob name must be provided")
-        
+
         # wrapper to add task_id to progress info
         def progress_wrapper(info):
             callback_info = dict(info) if isinstance(info, dict) else {'info': info}
             callback_info['task_id'] = task_id
             if progress_callback:
-                progress_callback(callback_info)
-            
+                # Remove task_id from the info before calling the original callback
+                # to avoid duplicate task_id in the progress data
+                info_without_task_id = {k: v for k, v in callback_info.items() if k != 'task_id'}
+                progress_callback(info_without_task_id)
+
         self.upload_semaphore.acquire()
-        
+
         try:
             self.active_uploads[task_id] = {
                 'status': "processing",
                 'start_time': datetime.utcnow(),
             }
-            
+
             streaming_service = StreamingVideoService()
             result = streaming_service.stream_download_to_azure(
-                url, format_selector, blob_name, progress_wrapper if progress_callback else None
+                url, blob_name, progress_wrapper if progress_callback else None
             )
-            
+
             self.active_uploads[task_id]['status'] = "completed"
-            
+
             return result
         except Exception as e:
             self.active_uploads[task_id]['status'] = "failed"
@@ -263,17 +266,15 @@ class ConcurrentStreamingVideoService:
             self.upload_semaphore.release()
             if task_id in self.active_uploads:
                 del self.active_uploads[task_id]
-                
-    
+
+
     def get_active_uploads(self) -> int:
         return len([u for u in self.active_uploads.values() if u['status'] == 'processing'])
-        
+
     def cleanup_old_uploads(self, max_age_hours: int = 24):
         """Clean up old upload records."""
         cutoff = datetime.now() - timedelta(hours=max_age_hours)
         self.active_uploads = {
-            k: v for k, v in self.active_uploads.items() 
+            k: v for k, v in self.active_uploads.items()
             if v['start_time'] > cutoff
         }
-    
-    
