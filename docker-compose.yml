@@ -11,18 +11,23 @@ services:
     env_file:
       - .env
     environment:
-      - DATABASE_URL=postgresql+asyncpg://Buzzler_user:mahdi067279@db:5432/Buzzler
-      - SMTP_HOST=mailhog
-      - SMTP_PORT=1025
-      - SMTP_USERNAME=""
-      - SMTP_PASSWORD=""
-      - SENDER_EMAIL=noreply@buzzler.com
+      DATABASE_URL: "postgresql+asyncpg://Buzzler_user:mahdi067279@db:5432/Buzzler"
+      SMTP_HOST: "mailhog"
+      SMTP_PORT: "1025"
+      SMTP_USERNAME: ""
+      SMTP_PASSWORD: ""
+      SENDER_EMAIL: "noreply@buzzler.com"
+      CELERY_BROKER_URL: "redis://redis:6379/0"
+      REDIS_URL: "redis://redis:6379/0"
+      CELERY_RESULT_BACKEND: "redis://redis:6379/1"
     # Wait for the db and redis services to be ready before starting
     depends_on:
       db:
         condition: service_healthy
-      mailhog:
+      redis:
         condition: service_started
+      # mailhog:
+      #   condition: service_started
     # Mount the local ./backend folder into /app inside the container (for live code updates)
     volumes:
       - ./backend:/app
@@ -66,16 +71,44 @@ services:
       timeout: 5s
       retries: 5
 
-  mailhog:
-    image: mailhog/mailhog
+  redis:
+    image: redis:7-alpine
     ports:
-      - "1025:1025" # SMTP port
-      - "8025:8025" # Web UI port
+      - "6379:6379"
     healthcheck:
-      test: ["CMD", "nc", "-z", "localhost", "1025"]
+      test: ["CMD", "redis-cli", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
+
+  celery:
+    build: ./backend
+    image: backend-celery
+    command: ["celery", "-A", "app.celery.celery_app:celery_app", "worker", "--loglevel=info", "-Q", "audio_processing,video_processing,cleanup,import_tasks", "-c", "4"]
+    env_file:
+      - .env
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/1
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      redis:
+        condition: service_started
+      db:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app
+
+  # mailhog:
+  #   image: mailhog/mailhog
+  #   ports:
+  #     - "1025:1025" # SMTP port
+  #     - "8025:8025" # Web UI port
+  #   healthcheck:
+  #     test: ["CMD", "nc", "-z", "localhost", "1025"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
 
 # Declare named volumes used by services above
 volumes:

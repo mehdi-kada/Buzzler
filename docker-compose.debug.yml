@@ -1,0 +1,68 @@
+# docker-compose.debug.yml
+# Use with: docker compose -f docker-compose.yml -f docker-compose.debug.yml up --build
+# Use with: docker compose -f docker-compose.yml -f docker-compose.debug.yml up --build
+# This overrides the backend service to enable remote debugging via debugpy.
+# Strategy here: we install debugpy in the image (build arg) and let application code
+# (see app/main.py) open the debug listener when DEBUGPY=1. This avoids the double-process
+# issue you get by wrapping 'python -m debugpy -m uvicorn ...' with --reload.
+# Attach from IDE (Zed / VS Code) to localhost:5678 with path mapping host_root -> /app
+
+services:
+  backend:
+    build:
+      context: ./backend
+      args:
+        INSTALL_DEBUGPY: "true"        # triggers optional debugpy install in Dockerfile
+    environment:
+      # Enable programmatic debugpy in app/main.py
+      DEBUGPY: "1"
+      DEBUG_LISTEN: 0.0.0.0:5678
+      DEBUG_WAIT_FOR_CLIENT: "1"       # app will pause until debugger attaches
+      # (carry over your existing env vars; could also rely on env_file)
+      DATABASE_URL: postgresql+asyncpg://Buzzler_user:mahdi067279@db:5432/Buzzler
+      SMTP_HOST: mailhog
+      SMTP_PORT: "1025"
+      SMTP_USERNAME: ""
+      SMTP_PASSWORD: ""
+      SENDER_EMAIL: noreply@buzzler.com
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/1
+    command: >
+      sh -c "uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
+    ports:
+      - "8000:8000"   # FastAPI app
+      - "5678:5678"   # debugpy
+    volumes:
+      - ./backend:/app
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  # Optionally a debug-enabled celery worker (uncomment if you need to debug tasks).
+  # You usually attach to only one Python process at a time; leave disabled unless required.
+  # celery:
+  #   build:
+  #     context: ./backend
+  #     args:
+  #       INSTALL_DEBUGPY: "true"
+  #   command: >
+  #     sh -c "celery -A app.celery.celery_app:celery_app worker --loglevel=info -Q audio_processing,video_processing,cleanup -c 1"
+  #   environment:
+  #     DEBUGPY: "0"  # set to 1 and add a python wrapper if you want to debug celery
+  #     CELERY_BROKER_URL: redis://redis:6379/0
+  #     CELERY_RESULT_BACKEND: redis://redis:6379/1
+  #   volumes:
+  #     - ./backend:/app
+  #   depends_on:
+  #     redis:
+  #       condition: service_started
+  #     db:
+  #       condition: service_healthy
+
+# No need to redefine db / redis services here; they are taken from the base file.
+# This override only changes what is necessary for debugging.
+
+# After starting, logs should show: [debugpy] Waiting for client ...
+# Then attach your debugger and hit any endpoint; breakpoints should resolve.

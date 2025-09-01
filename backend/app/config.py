@@ -47,6 +47,9 @@ class Settings:
 
     # Redis settings
     REDIS_URL: str = os.getenv('REDIS_URL', 'redis://localhost:6379/0')
+    # Celery specific settings (fall back to REDIS_URL if not provided)
+    CELERY_BROKER_URL: str = os.getenv('CELERY_BROKER_URL') or REDIS_URL
+    CELERY_RESULT_BACKEND: str = os.getenv('CELERY_RESULT_BACKEND') or os.getenv('REDIS_URL', 'redis://localhost:6379/1').rsplit('/', 1)[0] + '/1'
 
     # Temporary storage settings
     TEMP_BASE_DIR: Path = Path(os.getenv('TEMP_BASE_DIR', '/tmp/buzzler'))

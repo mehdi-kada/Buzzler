@@ -1,0 +1,57 @@
+# Ignore Python virtual environments and common environment files
+venv/
+.venv/
+env/
+.env
+*.env
+
+# Byte-compiled / optimized / cached files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+pip-wheel-metadata/
+wheelhouse/
+*.whl
+
+# Testing / coverage
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+.pytest_cache/
+
+# IDE / editor
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs and databases
+*.log
+*.sqlite3
+*.db
+
+# Caches
+.cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+
+# Misc
+*.pem
+*.key
+*.pid
+
+# Exclude local-only development artifacts
+local_settings.py
+instance/

@@ -1,0 +1,38 @@
+[project]
+name = "backend"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "pydantic",
+    "email-validator",
+    "fastapi",
+    "uvicorn[standard]",
+    "python-multipart",
+    "alembic",
+    "requests",
+    "sqlalchemy",
+    "python-dotenv",
+    "sqlalchemy[asyncio]",
+    "asyncpg",
+    "websockets",
+    "python-jose[cryptography]",
+    "passlib[bcrypt]",
+    "bcrypt<4.0.0",
+    "aiosmtplib",
+    "httpx",
+    "itsdangerous",
+    "celery[redis]",
+    "redis",
+    'psycopg2-binary; python_version < "3.13"',
+    'psycopg[binary]; python_version >= "3.13"',
+    "pydantic-settings",
+    "aiofiles",
+    "azure-storage-blob",
+    "azure-identity",
+    "python-magic",
+    "yt-dlp",
+    "pytest>=8.4.1",
+    "debugpy>=1.8.16",
+]

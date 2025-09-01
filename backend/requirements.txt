@@ -30,3 +30,7 @@ aiofiles
 azure-storage-blob
 azure-identity
 python-magic
+yt-dlp
+
+# Optional: remote debugging helper (uncomment to install in image)
+# debugpy
