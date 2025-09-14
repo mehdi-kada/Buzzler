@@ -20,7 +20,6 @@ class StreamingVideoService:
 
     def __init__(self) -> None:
         self.azure_service = AzureUploadService()
-        # 4 MiB chunk size; adjust according to Azure limits and memory constraints
         self.chunk_size: int = 4 * 1024 * 1024
 
     def extract_video_info(self, url: str) -> Dict[str, Any]:
@@ -39,6 +38,8 @@ class StreamingVideoService:
         with YoutubeDL(cast(Any, ydl_opts)) as ydl:
             try:
                 info = ydl.extract_info(url, download=False)
+                if not info:
+                    raise RuntimeError("No video info extracted")
                 return {
                     'title': info.get('title', 'Unknown'),
                     'duration': info.get('duration'),
@@ -106,14 +107,12 @@ class StreamingVideoService:
             url,
         ]
 
-
-
         process = None
         try:
             if progress_callback:
                 progress_callback({"current_step": "starting_download", "progress_percentage": 5})
 
-            process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, bufsize=0)
+            process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, bufsize=0)
 
             if progress_callback:
                 progress_callback({"current_step": "streaming_to_azure", "progress_percentage": 10})
@@ -167,8 +166,10 @@ class StreamingVideoService:
                 raise RuntimeError("yt-dlp process was not started as expected")
 
             return_code = process.wait()
+            stderr_output = process.stderr.read().decode('utf-8', errors='ignore') if process.stderr else ''
+
             if return_code != 0:
-                raise RuntimeError(f"yt-dlp failed with return code {return_code}")
+                raise RuntimeError(f"yt-dlp failed with return code {return_code}. Stderr: {stderr_output}")
 
             if block_list:
                 blob_client.commit_block_list(cast(List[Any], block_list))
@@ -183,14 +184,15 @@ class StreamingVideoService:
                         }
                     )
             else:
-                raise RuntimeError("No data was downloaded from the video")
+                raise RuntimeError(f"No data was downloaded from the video. Stderr: {stderr_output}")
 
             return blob_name
 
         except Exception as exc:
             # Attempt to remove any partially uploaded blob
             try:
-                blob_client.delete_blob()
+                if blob_client.exists():
+                    blob_client.delete_blob()
             except Exception:
                 # ignore deletion errors, nothing we can do here
                 pass

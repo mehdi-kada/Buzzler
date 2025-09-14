@@ -100,10 +100,15 @@ def process_video_upload_streaming(self, url:str, custom_filename: Optional[str]
 
         blob_url = streaming_service.azure_service.get_blob_url(final_blob_name)
 
+        #TODO: save to database 
+
+        
+
         success_data = {
             'current_step': 'completed',
             'progress_percentage': 100,
             'uploaded_bytes': uploaded_bytes,  # Use the actual uploaded bytes
+            'total_bytes': uploaded_bytes,
             'blob_name': final_blob_name,
             'blob_url': blob_url,
             'metadata': video_info,

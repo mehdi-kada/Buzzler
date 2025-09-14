@@ -1,12 +1,11 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import UploadArea from "@/components/upload/UploadArea";
 import VideoImport from "@/components/upload/VideoImport";
 import ProjectSettings from "@/components/upload/ProjectSettings";
-import api from "@/lib/axios/auth_interceptor";
 import { VideoProgressUpdate } from "@/types/video_validation";
-import { toast } from "sonner";
+import { useVideoImport } from "@/hooks/useVideoImport";
 
 export default function NewUploadVideoPage() {
   const [activeTab, setActiveTab] = useState<"file" | "url">("file");
@@ -18,91 +17,26 @@ export default function NewUploadVideoPage() {
     socialCaptions: true,
     hashtags: true,
   });
-  
-  const [taskId, setTaskId] = useState<string | null>(null);
-  const [isImporting, setIsImporting] = useState(false);
-  const [progressData, setProgressData] = useState<VideoProgressUpdate | null>(null);
-  const [errData, setErrData] = useState<string | null>(null);
-  
-  // Handle import start
-  const handleImportStart = (newTaskId: string) => {
-    setTaskId(newTaskId);
-    setIsImporting(true);
-    setProgressData(null);
-    setErrData(null);
-  };
-  
-  // Handle import error
-  const handleImportError = (error: string) => {
-    setErrData(error);
-    setIsImporting(false);
-  };
-  
+
+  const {
+    taskId,
+    uploading: isImporting,
+    progressData,
+    errData,
+    importVideo,
+    reset,
+  } = useVideoImport();
+
+
   // Reset the import process
   const resetImport = () => {
-    setTaskId(null);
-    setIsImporting(false);
-    setProgressData(null);
-    setErrData(null);
+    reset();
   };
-  
-  // Poll for progress updates
-  useEffect(() => {
-    if (!taskId || !isImporting) return;
-    
-    const fetchProgress = async () => {
-      try {
-        const response = await api.get(`/import/task-status/${taskId}`);
-        const data: VideoProgressUpdate = response.data;
-        setProgressData(data);
-        
-        // Check if the task is completed or failed
-        if (data.status === "failed") {
-          setErrData(data.error_message || "Upload failed");
-          setIsImporting(false);
-        } else if (data.status === "ready") {
-          // Keep the progress bar visible but show completion
-          toast.success("Video import completed successfully!");
-        }
-      } catch (error: any) {
-        let errorMessage = "Failed to fetch progress";
-        
-        // Handle different error response formats
-        if (error?.response?.data?.detail) {
-          const detail = error.response.data.detail;
-          if (typeof detail === 'string') {
-            errorMessage = detail;
-          } else if (typeof detail === 'object') {
-            if (detail.msg) {
-              errorMessage = detail.msg;
-            } else if (Array.isArray(detail)) {
-              errorMessage = detail.map((error: any) => 
-                error.msg || JSON.stringify(error)
-              ).join(', ');
-            } else {
-              errorMessage = JSON.stringify(detail);
-            }
-          }
-        } else if (error instanceof Error) {
-          errorMessage = error.message;
-        }
-        
-        setErrData(errorMessage);
-        setIsImporting(false);
-      }
-    };
-    
-    // Poll every 2 seconds
-    const interval = setInterval(fetchProgress, 2000);
-    fetchProgress(); // Initial call
-    
-    return () => clearInterval(interval);
-  }, [taskId, isImporting]);
-  
+
   // Progress display component
   const VideoImportProgress = () => {
     if (!progressData) return null;
-    
+
     const getStatusText = () => {
       switch (progressData.status) {
         case "pending_upload":
@@ -123,35 +57,35 @@ export default function NewUploadVideoPage() {
           return "Processing...";
       }
     };
-    
+
     const statusText = getStatusText();
     // When status is "ready", show 100% progress
-    const progressPercentage = progressData.status === "ready" 
-      ? 100 
-      : progressData.progress_percentage || 0;
-    
+    const progressPercentage = progressData.status === "ready"
+      ? 100
+      : progressData.progressPercentage ||0 ;
+
     // Show checkmark when task is completed
     const showCheckmark = progressData.status === "ready";
-    
+
     return (
       <div className="form-input p-6 rounded-2xl">
         <h3 className="text-xl font-semibold mb-4">Import Progress</h3>
-        
+
         <div className="mb-4">
           <div className="flex justify-between text-sm mb-1">
             <div className="flex items-center">
               <span>{statusText}</span>
               {showCheckmark && (
-                <svg 
-                  className="ml-2 text-green-500 w-5 h-5" 
-                  fill="none" 
-                  stroke="currentColor" 
+                <svg
+                  className="ml-2 text-green-500 w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
                   viewBox="0 0 24 24"
                 >
-                  <path 
-                    strokeLinecap="round" 
-                    strokeLinejoin="round" 
-                    strokeWidth="2" 
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
                     d="M5 13l4 4L19 7"
                   />
                 </svg>
@@ -159,32 +93,33 @@ export default function NewUploadVideoPage() {
             </div>
             <span>{Math.round(progressPercentage)}%</span>
           </div>
-          <div className="progress-bar h-2 rounded-full overflow-hidden">
-            <div 
-              className="progress-fill h-full" 
-              style={{ width: `${progressPercentage}%` }}
+          <div className="bg-white/10 h-2 rounded-full overflow-hidden">
+            <div
+              className="h-full transition-all duration-300 ease-in-out"
+              style={{
+                width: `${progressPercentage}%`,
+                background: "linear-gradient(90deg, #dc2667, #f97316)",
+              }}
             ></div>
           </div>
         </div>
-        
+
         {progressData.message && (
           <div className="text-sm text-gray-300 mb-4">
             {progressData.message}
           </div>
         )}
-        
+
         {progressData.status === "failed" && errData && (
-          <div className="text-sm text-red-400 mb-4">
-            {errData}
-          </div>
+          <div className="text-sm text-red-400 mb-4">{errData}</div>
         )}
-        
+
         {progressData.status === "ready" && (
           <div className="text-sm text-green-400 mb-4">
             Video import completed successfully!
           </div>
         )}
-        
+
         <button
           className="btn-secondary px-4 py-2 rounded-lg font-medium"
           onClick={resetImport}
@@ -194,19 +129,17 @@ export default function NewUploadVideoPage() {
       </div>
     );
   };
-  
+
   // Error display component
   const VideoImportError = () => {
     if (!errData || isImporting) return null;
-    
+
     return (
       <div className="form-input p-6 rounded-2xl">
         <h3 className="text-xl font-semibold mb-4">Import from URL</h3>
-        
-        <div className="text-sm text-red-400 mb-4">
-          {errData}
-        </div>
-        
+
+        <div className="text-sm text-red-400 mb-4">{errData}</div>
+
         <button
           className="btn-secondary px-4 py-2 rounded-lg font-medium"
           onClick={resetImport}
@@ -282,9 +215,9 @@ export default function NewUploadVideoPage() {
             ) : errData ? (
               <VideoImportError />
             ) : (
-              <VideoImport 
-                onImportStart={handleImportStart}
-                onImportError={handleImportError}
+              <VideoImport
+                onImportStart={importVideo}
+                isImporting={isImporting}
               />
             )}
           </div>
