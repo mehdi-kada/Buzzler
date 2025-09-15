@@ -20,6 +20,7 @@ class Video(Base):
     file_size_bytes: Mapped[Optional[int]] = mapped_column(Integer)
     mime_type: Mapped[Optional[str]] = mapped_column(String(100))
     file_extension: Mapped[Optional[str]] = mapped_column(String(10))
+    thumbnail_url: Mapped[Optional[str]] = mapped_column(Text)
 
     # Azure storage
     azure_file_path: Mapped[Optional[str]] = mapped_column(String(512), unique=True)  # Relative path in Azure container
@@ -41,7 +42,6 @@ class Video(Base):
     # Error handling
     error_message: Mapped[Optional[str]] = mapped_column(Text)
 
-    # Timestamps
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
     upload_completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)

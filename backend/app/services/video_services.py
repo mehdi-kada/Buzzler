@@ -41,15 +41,11 @@ class StreamingVideoService:
                 if not info:
                     raise RuntimeError("No video info extracted")
                 return {
-                    'title': info.get('title', 'Unknown'),
-                    'duration': info.get('duration'),
-                    'uploader': info.get('uploader'),
-                    'upload_date': info.get('upload_date'),
-                    'view_count': info.get('view_count'),
-                    'thumbnail': info.get('thumbnail'),
+                    'original_filename': info.get('title', 'Unknown'),
+                    'duration_seconds': info.get('duration'),
+                    'thumbnail_url': info.get('thumbnail'),
                     'description': (info.get('description') or '')[:500],
-                    'id': info.get('id'),
-                    'ext': info.get('ext', 'mp4'),
+                    'file_extension': info.get('ext', 'mp4'),
                 }
             except Exception as e:
                 raise RuntimeError("Failed to extract video info") from e
@@ -99,9 +95,9 @@ class StreamingVideoService:
         cmd = [
             "yt-dlp",
             "--format",
-            "bestvideo*[height=1080]+bestaudio/best[height=1080]/bestvideo*[height<=1080][height>=720]+bestaudio/best[height<=1080][height>=720]",
+            "bestvideo[height<=1080]+bestaudio/best[height<=1080]/best",
             "--output",
-            "-",  # stdout
+            "pipe:",  # stdout
             "--quiet",
             "--no-warnings",
             url,
@@ -189,6 +185,7 @@ class StreamingVideoService:
             return blob_name
 
         except Exception as exc:
+            logger.error(f"Streaming upload failed with exception: {exc}", exc_info=True)
             # Attempt to remove any partially uploaded blob
             try:
                 if blob_client.exists():

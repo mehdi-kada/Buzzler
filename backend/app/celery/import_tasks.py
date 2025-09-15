@@ -6,13 +6,14 @@ from typing import Optional
 from app.services.video_services import ConcurrentStreamingVideoService, StreamingVideoService
 from app.models.enums import VideoStatus
 from app.schemas.schema_import_video import VideoProgressUpdate
+from app.services.video_db_service import add_video_info_to_db
 
 # global instances for rate limiting (sync redis with decoded string responses)
 redis_client = redis.Redis.from_url(settings.REDIS_URL, decode_responses=True)
 concurrent_uploads = ConcurrentStreamingVideoService(max_concurrent_uploads=5)
 
 @celery_app.task(bind=True, max_retries=3)
-def process_video_upload_streaming(self, url:str, custom_filename: Optional[str] = None): 
+def process_video_upload_streaming(self, url: str, user_id: str, custom_filename: Optional[str] = None): 
     """
         task to upload video from a streaming source (like youtube, vimeo, etc.) directly to azure with no disk space usage
     """
@@ -101,6 +102,17 @@ def process_video_upload_streaming(self, url:str, custom_filename: Optional[str]
         blob_url = streaming_service.azure_service.get_blob_url(final_blob_name)
 
         #TODO: save to database 
+        add_video_info_to_db(user_id=user_id, custom_filename=custom_filename, video_metadata={
+            'original_filename': video_info.get('original_filename', 'Unknown'),
+            'duration_seconds': video_info.get('duration_seconds'),
+            'thumbnail_url': video_info.get('thumbnail_url'),
+            'description': video_info.get('description'),
+            'file_extension': video_info.get('file_extension', 'mp4'),
+            'azure_file_path': final_blob_name,
+            'azure_video_url': blob_url,
+            'file_size_bytes': uploaded_bytes,
+            'status': VideoStatus.READY
+        })
 
         
 
