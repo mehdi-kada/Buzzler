@@ -20,7 +20,6 @@ class StreamingVideoService:
 
     def __init__(self) -> None:
         self.azure_service = AzureUploadService()
-        # 4 MiB chunk size; adjust according to Azure limits and memory constraints
         self.chunk_size: int = 4 * 1024 * 1024
 
     def extract_video_info(self, url: str) -> Dict[str, Any]:
@@ -39,16 +38,14 @@ class StreamingVideoService:
         with YoutubeDL(cast(Any, ydl_opts)) as ydl:
             try:
                 info = ydl.extract_info(url, download=False)
+                if not info:
+                    raise RuntimeError("No video info extracted")
                 return {
-                    'title': info.get('title', 'Unknown'),
-                    'duration': info.get('duration'),
-                    'uploader': info.get('uploader'),
-                    'upload_date': info.get('upload_date'),
-                    'view_count': info.get('view_count'),
-                    'thumbnail': info.get('thumbnail'),
+                    'original_filename': info.get('title', 'Unknown'),
+                    'duration_seconds': info.get('duration'),
+                    'thumbnail_url': info.get('thumbnail'),
                     'description': (info.get('description') or '')[:500],
-                    'id': info.get('id'),
-                    'ext': info.get('ext', 'mp4'),
+                    'file_extension': info.get('ext', 'mp4'),
                 }
             except Exception as e:
                 raise RuntimeError("Failed to extract video info") from e
@@ -98,22 +95,20 @@ class StreamingVideoService:
         cmd = [
             "yt-dlp",
             "--format",
-            "bestvideo*[height=1080]+bestaudio/best[height=1080]/bestvideo*[height<=1080][height>=720]+bestaudio/best[height<=1080][height>=720]",
+            "bestvideo[height<=1080]+bestaudio/best[height<=1080]/best",
             "--output",
-            "-",  # stdout
+            "pipe:",  # stdout
             "--quiet",
             "--no-warnings",
             url,
         ]
-
-
 
         process = None
         try:
             if progress_callback:
                 progress_callback({"current_step": "starting_download", "progress_percentage": 5})
 
-            process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, bufsize=0)
+            process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, bufsize=0)
 
             if progress_callback:
                 progress_callback({"current_step": "streaming_to_azure", "progress_percentage": 10})
@@ -167,8 +162,10 @@ class StreamingVideoService:
                 raise RuntimeError("yt-dlp process was not started as expected")
 
             return_code = process.wait()
+            stderr_output = process.stderr.read().decode('utf-8', errors='ignore') if process.stderr else ''
+
             if return_code != 0:
-                raise RuntimeError(f"yt-dlp failed with return code {return_code}")
+                raise RuntimeError(f"yt-dlp failed with return code {return_code}. Stderr: {stderr_output}")
 
             if block_list:
                 blob_client.commit_block_list(cast(List[Any], block_list))
@@ -183,14 +180,16 @@ class StreamingVideoService:
                         }
                     )
             else:
-                raise RuntimeError("No data was downloaded from the video")
+                raise RuntimeError(f"No data was downloaded from the video. Stderr: {stderr_output}")
 
             return blob_name
 
         except Exception as exc:
+            logger.error(f"Streaming upload failed with exception: {exc}", exc_info=True)
             # Attempt to remove any partially uploaded blob
             try:
-                blob_client.delete_blob()
+                if blob_client.exists():
+                    blob_client.delete_blob()
             except Exception:
                 # ignore deletion errors, nothing we can do here
                 pass

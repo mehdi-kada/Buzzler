@@ -1,16 +1,18 @@
 from typing import Optional
 import asyncio
-from fastapi import APIRouter, HTTPException, status, Body
+from fastapi import APIRouter, HTTPException, status, Body, Depends
 from app.celery.import_tasks import get_server_stats, process_video_upload_streaming, redis_client
 from app.models.enums import VideoStatus
 from app.schemas.schema_import_video import VideoProgressUpdate, VideoUploadResponse, VideoUploadRequest
+from app.core.auth.auth_endpoints import get_current_user
+from app.models.user import User
 
 
 router = APIRouter(prefix="/import")
 
 
 @router.post("/import-video", response_model=VideoUploadResponse)
-async def import_video(video_request: VideoUploadRequest):
+async def import_video(video_request: VideoUploadRequest, user: User = Depends(get_current_user)):
     """
         orchestrates celery to import video directly to azure
     """
@@ -19,7 +21,7 @@ async def import_video(video_request: VideoUploadRequest):
     
     try:
         print("the task is about to start : ")
-        task = process_video_upload_streaming.delay(url, custom_filename)
+        task = process_video_upload_streaming.delay(url, user.id, custom_filename)
         print(f"the task is : {task}")
         print(f"task id: {task.id}")
         return VideoUploadResponse(
@@ -108,7 +110,7 @@ async def get_task_status(task_id: str):
                 print(f"Task {task_id} is still pending - this might mean no worker is available to process it")
                 return VideoProgressUpdate(
                     task_id=task_id,
-                    status=VideoStatus.PENDING_UPLOAD,
+                    status=VideoStatus.PENDING_UPLOAD.value,
                     progress_percentage=0,
                     uploaded_bytes=0,
                     current_step="queued",
@@ -117,7 +119,7 @@ async def get_task_status(task_id: str):
                 print(f"Task {task_id} failed with error: {task_result.info}")
                 return VideoProgressUpdate(
                     task_id=task_id,
-                    status=VideoStatus.FAILED,
+                    status=VideoStatus.FAILED.value,
                     progress_percentage=0,
                     uploaded_bytes=0,
                     current_step="failed",
@@ -128,7 +130,7 @@ async def get_task_status(task_id: str):
                 print(f"Task {task_id} is in state: {task_result.state}")
                 return VideoProgressUpdate(
                     task_id=task_id,
-                    status=VideoStatus.UPLOADING,
+                    status=VideoStatus.UPLOADING.value,
                     progress_percentage=0,
                     uploaded_bytes=0,
                     current_step=task_result.state.lower(),
@@ -152,7 +154,7 @@ async def get_task_status(task_id: str):
             # avoid blocking event loop if someone stored a very large state; just read its state
             return VideoProgressUpdate(
                 task_id=task_id,
-                status=VideoStatus.UPLOADING,
+                status=VideoStatus.UPLOADING.value,
                 progress_percentage=0,
                 uploaded_bytes=0,
                 current_step=(task_result.state or "unknown").lower(),

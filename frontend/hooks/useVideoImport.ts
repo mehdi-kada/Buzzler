@@ -5,36 +5,40 @@ import {
   VideoProgressUpdate,
 } from "@/types/video_validation";
 import { useCallback, useEffect, useState } from "react";
+import { toast } from "sonner";
+
 
 export const useVideoImport = (): UseVideoImportReturn => {
   const [serverStats, setServerStats] = useState<ServerStats | null>(null);
-  const [taskId, setTaskId] = useState("");
-  const [errData, setErrData] = useState("");
+  const [taskId, setTaskId] = useState<string|null>(null);
+  const [errData, setErrData] = useState<string|null>(null);
   const [uploading, setUploading] = useState(false);
-  const [progressData, setProgress] = useState<VideoProgressUpdate | null>(
-    null,
-  );
+  const [progressData, setProgressData] = useState<VideoProgressUpdate | null>(null);
 
   const refreshServerStats = useCallback(async () => {
-    api
-      .get("/import/server-stats")
-      .then((result) => setServerStats(result.data.server_stats))
-      .catch((error) => console.log("Error fetching server stats:", error));
+    try {
+      const { data } = await api.get("/import/server-stats");
+      setServerStats(data.server_stats);
+    } catch (err) {
+      console.log("Failed to fetch server stats", err);
+    }
   }, []);
 
   const importVideo = useCallback(
     async (
       url: string,
-      custom_filename?: string,
+      custom_file_name?: string,
     ) => {
       try {
         const { data } = await api.post("/import/import-video", {
           url,
-          custom_filename,
+          custom_file_name: custom_file_name || null,
         });
 
         setTaskId(data.task_id);
         setUploading(true);
+        setProgressData(null)
+        setErrData(null);
         await refreshServerStats();
       } catch (err: any) {
         let errorMessage = "Error importing video. Please check the URL and try again.";
@@ -75,18 +79,17 @@ export const useVideoImport = (): UseVideoImportReturn => {
       try {
         const response = await api.get(`/import/task-status/${taskId}`);
         const data: VideoProgressUpdate = response.data;
-        setProgress(data);
-
-        if (
-          data.status === "failed" ||
-          data.status === "uploaded"
-        ) {
+        setProgressData(data);
+        
+        if (data.status === "failed"){
+          setErrData(data?.errorMessage || "Upload failed");
           setUploading(false);
-          await refreshServerStats();
+        }
 
-          if (data.status === "failed") {
-            setErrData(data?.errorMessage || "Upload failed");
-          }
+        if (data.status === "uploaded" || data.status === "ready") {
+          setUploading(false);
+          toast.success("Video imported successfully!");
+          await refreshServerStats();
         }
       } catch (err: any) {
         let errorMessage = "Failed to fetch progress";
@@ -120,10 +123,10 @@ export const useVideoImport = (): UseVideoImportReturn => {
     };
     // poll every 2 seconds
     const interval = setInterval(progressPoll, 2000);
-    progressPoll(); //initila call
+    progressPoll(); //initial call
 
     return () => clearInterval(interval);
-  }, [taskId, uploading, refreshServerStats]);
+  }, [taskId, uploading]);
 
   // load server stats on load
   useEffect(() => {
@@ -131,16 +134,16 @@ export const useVideoImport = (): UseVideoImportReturn => {
   }, [refreshServerStats]);
 
   const reset = () => {
-    setTaskId("");
-    setErrData("");
+    setTaskId(null);
+    setErrData(null);
     setUploading(false);
-    setProgress(null);
+    setProgressData(null);
   };
 
   return {
     serverStats,
-    taskId,
-    errData,
+    taskId: taskId || null,
+    errData: errData || null,
     uploading,
     progressData,
     importVideo,

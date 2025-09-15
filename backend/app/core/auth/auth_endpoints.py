@@ -333,9 +333,9 @@ async def oauth_callback(code: str, provider: str, response: Response, db: Async
         access_token = create_access_token(data={"sub": user.email})
 
         frontend_url = "http://localhost:3000/auth/oauth/success"
-        # put user details as query params (flattened)
-        user_params = urlencode({"email": user.email, "first_name": user.first_name})
-        redirect_url = f"{frontend_url}?token={access_token}&{user_params}"
+        # Encode user details into a single 'user' parameter
+        user_data = urlencode({"email": user.email, "first_name": user.first_name})
+        redirect_url = f"{frontend_url}?token={access_token}&user={user_data}"
 
         return RedirectResponse(url=redirect_url, status_code=302)
 

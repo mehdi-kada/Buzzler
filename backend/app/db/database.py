@@ -1,6 +1,8 @@
+
+from sqlalchemy import create_engine
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine, AsyncSession
 from dotenv import load_dotenv
-from sqlalchemy.orm import DeclarativeBase
+from sqlalchemy.orm import DeclarativeBase, sessionmaker
 import os
 import logging
 
@@ -41,6 +43,17 @@ AsyncSessionLocal = async_sessionmaker(
     autoflush=False,
     expire_on_commit=False
 )
+
+sync_engine = create_engine(
+    DATABASE_URL.replace("asyncpg", "psycopg"),
+    pool_size=20,
+    max_overflow=30,
+    pool_timeout=30,
+    pool_recycle=3600,
+    echo=False,
+)
+
+SessionLocal = sessionmaker(bind=sync_engine, autocommit=False, autoflush=False)
 
 class Base(DeclarativeBase):
     pass

@@ -52,8 +52,8 @@ export interface ServerStats {
 
 export interface UseVideoImportReturn {
   serverStats: ServerStats | null;
-  taskId: string;
-  errData: string;
+  taskId: string | null;
+  errData: string | null;
   uploading: boolean;
   progressData: VideoProgressUpdate | null;
   importVideo: (
